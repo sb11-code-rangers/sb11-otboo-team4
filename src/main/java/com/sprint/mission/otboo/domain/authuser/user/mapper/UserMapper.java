@@ -2,12 +2,12 @@ package com.sprint.mission.otboo.domain.authuser.user.mapper;
 
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
-import org.springframework.stereotype.Component;
 
-@Component
-public class UserMapper {
+public final class UserMapper {
 
-    public UserDto userDtoFromUser(User user) {
+    private UserMapper() {}
+
+    public static UserDto userDtoFromUser(User user) {
         return new UserDto(
                 user.getId(),
                 user.getCreatedAt(),

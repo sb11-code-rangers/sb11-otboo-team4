@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class UserMapperTest {
 
-    private final UserMapper userMapper = new UserMapper();
-
     @Nested
     @DisplayName("userDtoFromUser")
     class UserDtoFromUser {
@@ -24,7 +22,7 @@ class UserMapperTest {
             User user = User.create("홍길동", "hong@test.com", "encoded-password");
 
             // when
-            UserDto dto = userMapper.userDtoFromUser(user);
+            UserDto dto = UserMapper.userDtoFromUser(user);
 
             // then
             assertThat(dto.id()).isEqualTo(user.getId());
@@ -42,7 +40,7 @@ class UserMapperTest {
             User admin = User.createAdmin("관리자", "admin@test.com", "encoded-password");
 
             // when
-            UserDto dto = userMapper.userDtoFromUser(admin);
+            UserDto dto = UserMapper.userDtoFromUser(admin);
 
             // then
             assertThat(dto.role()).isEqualTo(Role.ADMIN);
