@@ -61,5 +61,19 @@ class FeedControllerTest {
           .andExpect(jsonPath("$.likeCount").value(0))
           .andExpect(jsonPath("$.likedByMe").value(false));
     }
+
+    @Test
+    @DisplayName("content가 비어 있으면 400을 반환한다")
+    void returns400_whenContentIsBlank() throws Exception {
+      // given — content 공백
+      FeedCreateRequest request = new FeedCreateRequest(
+          UUID.randomUUID(), UUID.randomUUID(), List.of(UUID.randomUUID()), "");
+
+      // when & then
+      mockMvc.perform(post("/api/feeds")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
   }
 }
