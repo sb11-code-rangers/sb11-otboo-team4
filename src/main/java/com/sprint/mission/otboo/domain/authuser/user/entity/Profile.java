@@ -42,8 +42,10 @@ public class Profile {
 
     private Double longitude;
 
+    @Column(name = "location_x")
     private Integer locationX;
 
+    @Column(name = "location_y")
     private Integer locationY;
 
     @JdbcTypeCode(SqlTypes.JSON)

@@ -21,27 +21,27 @@ import java.util.UUID;
 public class User {
 
     @Id @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "user_id", nullable = false, updatable = false)
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "user_name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "user_email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "user_password", nullable = false)
+    @Column(name = "password", nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "user_role", nullable = false)
+    @Column(name = "role", nullable = false)
     private Role role;
 
     @Column(name = "is_locked", nullable = false)
     private boolean locked;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "user_lock_reason", nullable = false)
+    @Column(name = "lock_reason", nullable = false)
     private LockReason lockReason;
 
     @CreatedDate
