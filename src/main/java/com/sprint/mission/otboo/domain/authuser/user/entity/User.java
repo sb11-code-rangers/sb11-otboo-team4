@@ -68,4 +68,14 @@ public class User {
     public static User createAdmin(String name, String email, String encodedPassword) {
         return new User(name, email, encodedPassword, Role.ADMIN, false, LockReason.NONE);
     }
+
+    public void lock(LockReason lockReason) {
+        this.locked = true;
+        this.lockReason = lockReason;
+    }
+
+    public void unlock() {
+        this.locked = false;
+        this.lockReason = LockReason.NONE;
+    }
 }
