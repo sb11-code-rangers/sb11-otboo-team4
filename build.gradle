@@ -39,6 +39,10 @@ dependencies {
 	implementation "io.github.openfeign.querydsl:querydsl-jpa:7.5"
 	implementation 'org.springframework.boot:spring-boot-flyway'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:7.5:jpa"
@@ -60,6 +64,7 @@ dependencies {
 	testImplementation 'org.testcontainers:testcontainers-postgresql'
 	testImplementation 'com.navercorp.fixturemonkey:fixture-monkey-starter:1.2.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis-test'
 
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
