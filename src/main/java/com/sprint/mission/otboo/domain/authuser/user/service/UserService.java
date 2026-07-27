@@ -5,7 +5,7 @@ import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
-import com.sprint.mission.otboo.domain.authuser.user.mapper.AuthUserMapper;
+import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
-    private final AuthUserMapper authUserMapper;
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -31,7 +31,7 @@ public class UserService {
             throw new DuplicateEmailException();
         }
 
-        User newUser = User.createUser(request.name(), request.email(), passwordEncoder.encode(request.password()));
+        User newUser = User.create(request.name(), request.email(), passwordEncoder.encode(request.password()));
         User savedUser;
         try {
             savedUser = userRepository.saveAndFlush(newUser);
@@ -39,9 +39,9 @@ public class UserService {
             throw new DuplicateEmailException();
         }
 
-        Profile newDefaultProfile = Profile.createDefaultProfile(savedUser);
+        Profile newDefaultProfile = Profile.createDefault(savedUser);
         profileRepository.save(newDefaultProfile);
 
-        return authUserMapper.userDtoFromUser(savedUser);
+        return userMapper.userDtoFromUser(savedUser);
     }
 }

@@ -6,7 +6,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
-import com.sprint.mission.otboo.domain.authuser.user.mapper.AuthUserMapper;
+import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -37,7 +37,8 @@ class UserServiceTest {
     @InjectMocks UserService userService;
     @Mock UserRepository mockUserRepository;
     @Mock ProfileRepository mockProfileRepository;
-    @Mock AuthUserMapper mockAuthUserMapper;
+    @Mock
+    UserMapper mockUserMapper;
     @Mock PasswordEncoder mockPasswordEncoder;
 
     @Nested
@@ -53,10 +54,10 @@ class UserServiceTest {
             given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
             given(mockPasswordEncoder.encode(request.password())).willReturn("encoded-password");
 
-            User savedUser = User.createUser(request.name(), request.email(), "encoded-password");
+            User savedUser = User.create(request.name(), request.email(), "encoded-password");
             given(mockUserRepository.saveAndFlush(any(User.class))).willReturn(savedUser);
 
-            Profile savedProfile = Profile.createDefaultProfile(savedUser);
+            Profile savedProfile = Profile.createDefault(savedUser);
             given(mockProfileRepository.save(any(Profile.class))).willReturn(savedProfile);
 
             UserDto expectedDto = new UserDto(
@@ -67,7 +68,7 @@ class UserServiceTest {
                     savedUser.getRole(),
                     savedUser.isLocked()
             );
-            given(mockAuthUserMapper.userDtoFromUser(savedUser)).willReturn(expectedDto);
+            given(mockUserMapper.userDtoFromUser(savedUser)).willReturn(expectedDto);
 
             // when
             UserDto result = userService.signUp(request);
@@ -78,7 +79,7 @@ class UserServiceTest {
             verify(mockPasswordEncoder).encode(request.password());
             verify(mockUserRepository).saveAndFlush(any(User.class));
             verify(mockProfileRepository).save(any(Profile.class));
-            verify(mockAuthUserMapper).userDtoFromUser(savedUser);
+            verify(mockUserMapper).userDtoFromUser(savedUser);
         }
 
         @Test
@@ -93,7 +94,7 @@ class UserServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
+            given(mockUserMapper.userDtoFromUser(any(User.class)))
                     .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
 
             // when
@@ -120,7 +121,7 @@ class UserServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
+            given(mockUserMapper.userDtoFromUser(any(User.class)))
                     .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
 
             // when
@@ -141,14 +142,14 @@ class UserServiceTest {
             // given
             UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
 
-            User savedUser = User.createUser(request.name(), request.email(), "encoded-password");
+            User savedUser = User.create(request.name(), request.email(), "encoded-password");
 
             given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
             given(mockPasswordEncoder.encode(any())).willReturn("encoded-password");
             given(mockUserRepository.saveAndFlush(any(User.class))).willReturn(savedUser);
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockAuthUserMapper.userDtoFromUser(savedUser))
+            given(mockUserMapper.userDtoFromUser(savedUser))
                     .willReturn(new UserDto(savedUser.getId(), Instant.now(), savedUser.getEmail(), savedUser.getName(), savedUser.getRole(), savedUser.isLocked()));
 
             // when
@@ -174,7 +175,7 @@ class UserServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
+            given(mockUserMapper.userDtoFromUser(any(User.class)))
                     .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
 
             // when
@@ -222,7 +223,7 @@ class UserServiceTest {
                     .isInstanceOf(RuntimeException.class);
 
             verify(mockProfileRepository, never()).save(any());
-            verify(mockAuthUserMapper, never()).userDtoFromUser(any());
+            verify(mockUserMapper, never()).userDtoFromUser(any());
         }
     }
 }

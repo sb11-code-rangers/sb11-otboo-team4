@@ -9,9 +9,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AuthUserMapperTest {
+class UserMapperTest {
 
-    private final AuthUserMapper authUserMapper = new AuthUserMapper();
+    private final UserMapper userMapper = new UserMapper();
 
     @Nested
     @DisplayName("userDtoFromUser")
@@ -21,10 +21,10 @@ class AuthUserMapperTest {
         @DisplayName("User 엔티티를 UserDto로 정확히 변환한다")
         void userDtoFromUser_mapsAllFieldsCorrectly() {
             // given
-            User user = User.createUser("홍길동", "hong@test.com", "encoded-password");
+            User user = User.create("홍길동", "hong@test.com", "encoded-password");
 
             // when
-            UserDto dto = authUserMapper.userDtoFromUser(user);
+            UserDto dto = userMapper.userDtoFromUser(user);
 
             // then
             assertThat(dto.id()).isEqualTo(user.getId());
@@ -42,7 +42,7 @@ class AuthUserMapperTest {
             User admin = User.createAdmin("관리자", "admin@test.com", "encoded-password");
 
             // when
-            UserDto dto = authUserMapper.userDtoFromUser(admin);
+            UserDto dto = userMapper.userDtoFromUser(admin);
 
             // then
             assertThat(dto.role()).isEqualTo(Role.ADMIN);

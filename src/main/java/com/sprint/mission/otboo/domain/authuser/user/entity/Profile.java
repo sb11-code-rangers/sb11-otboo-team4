@@ -70,7 +70,7 @@ public class Profile {
         this.temperatureSensitivity = temperatureSensitivity;
     }
 
-    public static Profile createDefaultProfile(User user) {
+    public static Profile createDefault(User user) {
         return new Profile(user, DEFAULT_TEMPERATURE_SENSITIVITY);
     }
 }

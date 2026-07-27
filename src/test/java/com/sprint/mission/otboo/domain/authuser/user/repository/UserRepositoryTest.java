@@ -38,7 +38,7 @@ class UserRepositoryTest {
         @Test
         @DisplayName("User를 저장하면 ID가 생성되고 저장된 값을 조회할 수 있다")
         void save_and_findById() {
-            User user = User.createUser("홍길동", "hong@test.com", "encoded-password");
+            User user = User.create("홍길동", "hong@test.com", "encoded-password");
 
             User savedUser = userRepository.save(user);
             testEntityManager.flush();
@@ -55,11 +55,11 @@ class UserRepositoryTest {
         @Test
         @DisplayName("이미 존재하는 이메일로 저장하면 무결성 제약 예외가 발생한다")
         void save_duplicateEmail_throwsException() {
-            User user1 = User.createUser("홍길동", "duplicate@test.com", "encoded-password-1");
+            User user1 = User.create("홍길동", "duplicate@test.com", "encoded-password-1");
             userRepository.save(user1);
             testEntityManager.flush();
 
-            User user2 = User.createUser("김철수", "duplicate@test.com", "encoded-password-2");
+            User user2 = User.create("김철수", "duplicate@test.com", "encoded-password-2");
 
             assertThatThrownBy(() -> {
                 userRepository.saveAndFlush(user2);
@@ -74,7 +74,7 @@ class UserRepositoryTest {
         @Test
         @DisplayName("존재하는 이메일에 대해 existsByEmail은 true를 반환한다")
         void existsByEmail_existingEmail_returnsTrue() {
-            User user = User.createUser("홍길동", "hong@test.com", "encoded-password");
+            User user = User.create("홍길동", "hong@test.com", "encoded-password");
             userRepository.save(user);
             testEntityManager.flush();
 

@@ -5,7 +5,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AuthUserMapper {
+public class UserMapper {
 
     public UserDto userDtoFromUser(User user) {
         return new UserDto(

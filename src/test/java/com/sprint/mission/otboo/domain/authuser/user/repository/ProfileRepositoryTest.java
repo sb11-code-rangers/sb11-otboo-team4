@@ -40,10 +40,10 @@ class ProfileRepositoryTest {
         @DisplayName("Profile을 저장하면 User와 동일한 ID를 공유한다 (@MapsId)")
         void save_profileSharesIdWithUser() {
             // given
-            User user = userRepository.save(User.createUser("홍길동", "hong@test.com", "encoded-password"));
+            User user = userRepository.save(User.create("홍길동", "hong@test.com", "encoded-password"));
             testEntityManager.flush();
 
-            Profile profile = Profile.createDefaultProfile(user);
+            Profile profile = Profile.createDefault(user);
 
             // when
             Profile savedProfile = profileRepository.save(profile);
@@ -67,11 +67,11 @@ class ProfileRepositoryTest {
         @DisplayName("Profile은 기본 온도 민감도 3으로 생성된다")
         void createDefaultProfile_hasDefaultTemperatureSensitivity() {
             // given
-            User user = userRepository.save(User.createUser("홍길동", "hong2@test.com", "encoded-password"));
+            User user = userRepository.save(User.create("홍길동", "hong2@test.com", "encoded-password"));
             testEntityManager.flush();
 
             // when
-            Profile profile = Profile.createDefaultProfile(user);
+            Profile profile = Profile.createDefault(user);
 
             // then
             assertThat(profile.getTemperatureSensitivity()).isEqualTo(3);

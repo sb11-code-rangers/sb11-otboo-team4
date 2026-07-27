@@ -61,7 +61,7 @@ public class User {
         this.lockReason = lockReason;
     }
 
-    public static User createUser(String name, String email, String encodedPassword) {
+    public static User create(String name, String email, String encodedPassword) {
         return new User(name, email, encodedPassword, Role.USER, false, LockReason.NONE);
     }
 
