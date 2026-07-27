@@ -1,12 +1,15 @@
 package com.sprint.mission.otboo.domain.authuser.user.repository;
 
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
+import com.sprint.mission.otboo.global.config.JpaConfig;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -19,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(JpaConfig.class)
 class UserRepositoryTest {
 
     @Autowired
@@ -27,63 +31,77 @@ class UserRepositoryTest {
     @Autowired
     private TestEntityManager testEntityManager;
 
-    @Test
-    @DisplayName("User를 저장하면 ID가 생성되고 저장된 값을 조회할 수 있다")
-    void save_and_findById() {
-        User user = User.createUser("홍길동", "hong@test.com", "encoded-password");
+    @Nested
+    @DisplayName("save")
+    class Save {
 
-        User savedUser = userRepository.save(user);
-        testEntityManager.flush();
-        testEntityManager.clear();
+        @Test
+        @DisplayName("User를 저장하면 ID가 생성되고 저장된 값을 조회할 수 있다")
+        void save_and_findById() {
+            User user = User.createUser("홍길동", "hong@test.com", "encoded-password");
 
-        Optional<User> found = userRepository.findById(savedUser.getId());
-
-        assertThat(found).isPresent();
-        assertThat(found.get().getEmail()).isEqualTo("hong@test.com");
-        assertThat(found.get().getName()).isEqualTo("홍길동");
-        assertThat(found.get().getCreatedAt()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("이미 존재하는 이메일로 저장하면 무결성 제약 예외가 발생한다")
-    void save_duplicateEmail_throwsException() {
-        User user1 = User.createUser("홍길동", "duplicate@test.com", "encoded-password-1");
-        userRepository.save(user1);
-        testEntityManager.flush();
-
-        User user2 = User.createUser("김철수", "duplicate@test.com", "encoded-password-2");
-
-        assertThatThrownBy(() -> {
-            userRepository.save(user2);
+            User savedUser = userRepository.save(user);
             testEntityManager.flush();
-        }).isInstanceOf(DataIntegrityViolationException.class);
+            testEntityManager.clear();
+
+            Optional<User> found = userRepository.findById(savedUser.getId());
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getEmail()).isEqualTo("hong@test.com");
+            assertThat(found.get().getName()).isEqualTo("홍길동");
+            assertThat(found.get().getCreatedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("이미 존재하는 이메일로 저장하면 무결성 제약 예외가 발생한다")
+        void save_duplicateEmail_throwsException() {
+            User user1 = User.createUser("홍길동", "duplicate@test.com", "encoded-password-1");
+            userRepository.save(user1);
+            testEntityManager.flush();
+
+            User user2 = User.createUser("김철수", "duplicate@test.com", "encoded-password-2");
+
+            assertThatThrownBy(() -> {
+                userRepository.saveAndFlush(user2);
+            }).isInstanceOf(DataIntegrityViolationException.class);
+        }
     }
 
-    @Test
-    @DisplayName("존재하는 이메일에 대해 existsByEmail은 true를 반환한다")
-    void existsByEmail_existingEmail_returnsTrue() {
-        User user = User.createUser("홍길동", "hong@test.com", "encoded-password");
-        userRepository.save(user);
-        testEntityManager.flush();
+    @Nested
+    @DisplayName("existsByEmail")
+    class ExistsByEmail {
 
-        boolean exists = userRepository.existsByEmail("hong@test.com");
+        @Test
+        @DisplayName("존재하는 이메일에 대해 existsByEmail은 true를 반환한다")
+        void existsByEmail_existingEmail_returnsTrue() {
+            User user = User.createUser("홍길동", "hong@test.com", "encoded-password");
+            userRepository.save(user);
+            testEntityManager.flush();
 
-        assertThat(exists).isTrue();
+            boolean exists = userRepository.existsByEmail("hong@test.com");
+
+            assertThat(exists).isTrue();
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 이메일에 대해 existsByEmail은 false를 반환한다")
+        void existsByEmail_nonExistingEmail_returnsFalse() {
+            boolean exists = userRepository.existsByEmail("notfound@test.com");
+
+            assertThat(exists).isFalse();
+        }
     }
 
-    @Test
-    @DisplayName("존재하지 않는 이메일에 대해 existsByEmail은 false를 반환한다")
-    void existsByEmail_nonExistingEmail_returnsFalse() {
-        boolean exists = userRepository.existsByEmail("notfound@test.com");
+    @Nested
+    @DisplayName("findById")
+    class FindById {
 
-        assertThat(exists).isFalse();
-    }
+        @Test
+        @DisplayName("존재하지 않는 ID로 조회하면 빈 Optional을 반환한다")
+        void findById_nonExistingId_returnsEmpty() {
+            Optional<User> found = userRepository.findById(UUID.randomUUID());
 
-    @Test
-    @DisplayName("존재하지 않는 ID로 조회하면 빈 Optional을 반환한다")
-    void findById_nonExistingId_returnsEmpty() {
-        Optional<User> found = userRepository.findById(UUID.randomUUID());
-
-        assertThat(found).isEmpty();
+            assertThat(found).isEmpty();
+        }
     }
 }
