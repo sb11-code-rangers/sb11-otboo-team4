@@ -8,9 +8,11 @@ import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -26,6 +28,7 @@ public class FeedService {
     }
     Feed feed = feedRepository.save(
         Feed.create(request.authorId(), request.weatherId(), request.content()));
+    log.info("피드 등록 완료: feedId={}, authorId={}", feed.getId(), feed.getAuthorId());
     return feedMapper.toDto(feed, false);
   }
 }
