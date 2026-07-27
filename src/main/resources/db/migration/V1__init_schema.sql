@@ -41,17 +41,16 @@ CREATE INDEX IDX_weathers_location_id ON weathers (location_id);
 
 CREATE TABLE users
 (
-    user_id           UUID                     NOT NULL,
-    user_email        VARCHAR(255)             NOT NULL,
-    user_password     VARCHAR(255)             NOT NULL,
-    user_name         VARCHAR(255)             NOT NULL,
-    user_role         VARCHAR(20)              NOT NULL CHECK (user_role IN ('USER', 'ADMIN')),
-    is_locked         BOOLEAN                  NOT NULL DEFAULT FALSE,
-    user_lock_reason  VARCHAR(20)              NOT NULL CHECK (user_lock_reason IN ('NONE', 'ADMIN_ACTION')),
-    created_at        TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at        TIMESTAMP WITH TIME ZONE NOT NULL,
-    CONSTRAINT PK_USERS PRIMARY KEY (user_id),
-    CONSTRAINT UQ_users_email UNIQUE (user_email)
+    id         UUID                     NOT NULL,
+    email      VARCHAR(255)             NOT NULL,
+    password   VARCHAR(255)             NOT NULL,
+    name       VARCHAR(50)              NOT NULL,
+    role       VARCHAR(20)              NOT NULL CHECK (role IN ('USER', 'ADMIN')),
+    locked     BOOLEAN                  NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT PK_USERS PRIMARY KEY (id),
+    CONSTRAINT UQ_users_email UNIQUE (email)
 );
 
 CREATE TABLE social_accounts
@@ -70,19 +69,19 @@ CREATE INDEX IDX_social_accounts_user_id ON social_accounts (user_id);
 CREATE TABLE profiles
 (
     user_id                 UUID                     NOT NULL,
+    name                    VARCHAR(50)              NOT NULL,
     gender                  VARCHAR(10) CHECK (gender IN ('MALE', 'FEMALE', 'OTHER')),
     birth_date              DATE,
     latitude                DOUBLE PRECISION,
     longitude               DOUBLE PRECISION,
-    locationx               INTEGER,
-    locationy               INTEGER,
+    x                       INTEGER,
+    y                       INTEGER,
     location_names          JSONB,
     temperature_sensitivity INTEGER                  NOT NULL DEFAULT 3 CHECK (temperature_sensitivity BETWEEN 1 AND 5),
     profile_image_url       VARCHAR(255),
-    created_at              TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at              TIMESTAMP WITH TIME ZONE NOT NULL,
     CONSTRAINT PK_PROFILES PRIMARY KEY (user_id),
-    CONSTRAINT FK_users_TO_profiles_1 FOREIGN KEY (user_id) REFERENCES users (user_id)
+    CONSTRAINT FK_users_TO_profiles_1 FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
 CREATE TABLE clothes_attribute_defs
@@ -115,9 +114,9 @@ CREATE TABLE clothes
     image_url    VARCHAR(255),
     purchase_url VARCHAR(500),
     type         VARCHAR(20)              NOT NULL CHECK (type IN
-                                                            ('TOP', 'BOTTOM', 'DRESS', 'OUTER', 'UNDERWEAR',
-                                                             'ACCESSORY', 'SHOES', 'SOCKS', 'HAT', 'BAG', 'SCARF',
-                                                             'ETC')),
+                                                          ('TOP', 'BOTTOM', 'DRESS', 'OUTER', 'UNDERWEAR',
+                                                           'ACCESSORY', 'SHOES', 'SOCKS', 'HAT', 'BAG', 'SCARF',
+                                                           'ETC')),
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     deleted_at   TIMESTAMP WITH TIME ZONE,
