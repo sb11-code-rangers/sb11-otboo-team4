@@ -25,6 +25,7 @@ public class AuthService {
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
 
+    @Transactional
     public SignInDto signIn(SignInRequest request) {
 
         User foundUser = userRepository.findByEmail(request.username())
