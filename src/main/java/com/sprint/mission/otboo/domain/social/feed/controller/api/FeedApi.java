@@ -1,0 +1,20 @@
+package com.sprint.mission.otboo.domain.social.feed.controller.api;
+
+import com.sprint.mission.otboo.domain.social.feed.dto.FeedCreateRequest;
+import com.sprint.mission.otboo.domain.social.feed.dto.FeedDto;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+
+@Tag(name = "피드 관리", description = "피드 관련 API")
+public interface FeedApi {
+
+  @Operation(summary = "피드 등록", description = "피드 등록 API")
+  @ApiResponses({
+      @ApiResponse(responseCode = "201", description = "피드 등록 성공"),
+      @ApiResponse(responseCode = "400", description = "피드 등록 실패")
+  })
+  ResponseEntity<FeedDto> createFeed(FeedCreateRequest request);
+}
