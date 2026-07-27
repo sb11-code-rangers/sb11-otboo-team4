@@ -47,7 +47,7 @@ public class Profile {
     private Integer locationY;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "json")
+    @Column(columnDefinition = "jsonb")
     private List<String> locationNames;
 
     @Column(nullable = false)
