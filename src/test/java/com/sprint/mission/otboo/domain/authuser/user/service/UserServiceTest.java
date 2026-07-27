@@ -1,0 +1,196 @@
+package com.sprint.mission.otboo.domain.authuser.user.service;
+
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
+import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
+import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
+import com.sprint.mission.otboo.domain.authuser.user.entity.User;
+import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
+import com.sprint.mission.otboo.domain.authuser.user.mapper.AuthUserMapper;
+import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
+import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+
+    @InjectMocks UserService userService;
+    @Mock UserRepository mockUserRepository;
+    @Mock ProfileRepository mockProfileRepository;
+    @Mock AuthUserMapper mockAuthUserMapper;
+    @Mock PasswordEncoder mockPasswordEncoder;
+
+    @Test
+    @DisplayName("회원가입 성공 시 비밀번호를 암호화하고 User, Profile을 저장한 뒤 UserDto를 반환한다")
+    void signUp_success() {
+        // given
+        UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+
+        given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
+        given(mockPasswordEncoder.encode(request.password())).willReturn("encoded-password");
+
+        User savedUser = User.createUser(request.name(), request.email(), "encoded-password");
+        given(mockUserRepository.save(any(User.class))).willReturn(savedUser);
+
+        Profile savedProfile = Profile.createDefaultProfile(savedUser);
+        given(mockProfileRepository.save(any(Profile.class))).willReturn(savedProfile);
+
+        UserDto expectedDto = new UserDto(
+                savedUser.getId(),
+                Instant.now(),
+                savedUser.getEmail(),
+                savedUser.getName(),
+                savedUser.getRole(),
+                savedUser.isLocked()
+        );
+        given(mockAuthUserMapper.userDtoFromUser(savedUser)).willReturn(expectedDto);
+
+        // when
+        UserDto result = userService.signUp(request);
+
+        // then
+        assertThat(result).isEqualTo(expectedDto);
+        verify(mockUserRepository).existsByEmail(request.email());
+        verify(mockPasswordEncoder).encode(request.password());
+        verify(mockUserRepository).save(any(User.class));
+        verify(mockProfileRepository).save(any(Profile.class));
+        verify(mockAuthUserMapper).userDtoFromUser(savedUser);
+    }
+
+    @Test
+    @DisplayName("회원가입 시 평문 비밀번호가 아닌 암호화된 비밀번호로 User를 생성한다")
+    void signUp_encodesPasswordBeforeCreatingUser() {
+        // given
+        UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "rawPassword123");
+
+        given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
+        given(mockPasswordEncoder.encode("rawPassword123")).willReturn("encoded-password");
+        given(mockUserRepository.save(any(User.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(mockProfileRepository.save(any(Profile.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
+                .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
+
+        // when
+        userService.signUp(request);
+
+        // then
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(mockUserRepository).save(userCaptor.capture());
+        User capturedUser = userCaptor.getValue();
+
+        assertThat(capturedUser.getPassword()).isEqualTo("encoded-password");
+        assertThat(capturedUser.getPassword()).isNotEqualTo("rawPassword123");
+    }
+
+    @Test
+    @DisplayName("회원가입 시 기본 권한은 USER, 잠김 상태는 false로 생성된다")
+    void signUp_createsUserWithDefaultRoleAndUnlocked() {
+        // given
+        UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+
+        given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
+        given(mockPasswordEncoder.encode(any())).willReturn("encoded-password");
+        given(mockUserRepository.save(any(User.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(mockProfileRepository.save(any(Profile.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
+                .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
+
+        // when
+        userService.signUp(request);
+
+        // then
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(mockUserRepository).save(userCaptor.capture());
+        User capturedUser = userCaptor.getValue();
+
+        assertThat(capturedUser.getRole()).isEqualTo(Role.USER);
+        assertThat(capturedUser.isLocked()).isFalse();
+    }
+
+    @Test
+    @DisplayName("회원가입 시 저장된 User와 연결된 기본 Profile을 생성한다")
+    void signUp_createsDefaultProfileLinkedToUser() {
+        // given
+        UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+
+        User savedUser = User.createUser(request.name(), request.email(), "encoded-password");
+
+        given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
+        given(mockPasswordEncoder.encode(any())).willReturn("encoded-password");
+        given(mockUserRepository.save(any(User.class))).willReturn(savedUser);
+        given(mockProfileRepository.save(any(Profile.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(mockAuthUserMapper.userDtoFromUser(savedUser))
+                .willReturn(new UserDto(savedUser.getId(), Instant.now(), savedUser.getEmail(), savedUser.getName(), savedUser.getRole(), savedUser.isLocked()));
+
+        // when
+        userService.signUp(request);
+
+        // then
+        ArgumentCaptor<Profile> profileCaptor = ArgumentCaptor.forClass(Profile.class);
+        verify(mockProfileRepository).save(profileCaptor.capture());
+        Profile capturedProfile = profileCaptor.getValue();
+
+        assertThat(capturedProfile.getUser()).isEqualTo(savedUser);
+    }
+
+    @Test
+    @DisplayName("이미 가입된 이메일로 회원가입 시도 시 예외가 발생하고 저장은 일어나지 않는다")
+    void signUp_duplicateEmail_throwsExceptionAndDoesNotSave() {
+        // given
+        UserCreateRequest request = new UserCreateRequest("홍길동", "duplicate@test.com", "password123");
+
+        given(mockUserRepository.existsByEmail(request.email())).willReturn(true);
+
+        // when & then
+        assertThatThrownBy(() -> userService.signUp(request))
+                .isInstanceOf(RuntimeException.class);
+
+        verify(mockUserRepository, never()).save(any());
+        verify(mockProfileRepository, never()).save(any());
+        verify(mockPasswordEncoder, never()).encode(any());
+    }
+
+    @Test
+    @DisplayName("회원가입은 existsByEmail을 정확히 1회 호출한다")
+    void signUp_checksEmailDuplicationExactlyOnce() {
+        // given
+        UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+
+        given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
+        given(mockPasswordEncoder.encode(any())).willReturn("encoded-password");
+        given(mockUserRepository.save(any(User.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(mockProfileRepository.save(any(Profile.class)))
+                .willAnswer(invocation -> invocation.getArgument(0));
+        given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
+                .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
+
+        // when
+        userService.signUp(request);
+
+        // then
+        verify(mockUserRepository, times(1)).existsByEmail(request.email());
+    }
+}
