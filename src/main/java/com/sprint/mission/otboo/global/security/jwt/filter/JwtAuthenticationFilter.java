@@ -49,14 +49,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             authenticationAccessToken(token);
         } catch (ExpiredTokenException e) {
             response.setHeader(TOKEN_EXPIRED_HEADER, "true");
-            log.info("만료된 토큰, 재로그인 필요");
+            log.warn("만료된 토큰, 재로그인 필요");
         } catch (UserSessionExpiredException e) {
             response.setHeader(TOKEN_EXPIRED_HEADER, "true");
-            log.info("사용자 세션이 만료되었습니다. 재로그인 필요");
+            log.warn("사용자 세션이 만료되었습니다. 재로그인 필요");
         } catch (JwtException | UserSessionException e) {
-            log.info("인증 실패: {}", e.getMessage());
+            log.warn("인증 실패: {}", e.getMessage());
         } catch (Exception e) {
-            log.warn("토큰 처리 중 예상하지 못한 예외 발생", e);
+            log.error("토큰 처리 중 예상하지 못한 예외 발생", e);
         }
 
         filterChain.doFilter(request, response);
