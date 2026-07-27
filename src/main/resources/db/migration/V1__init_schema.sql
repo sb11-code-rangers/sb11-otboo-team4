@@ -114,9 +114,9 @@ CREATE TABLE clothes
     image_url    VARCHAR(255),
     purchase_url VARCHAR(500),
     type         VARCHAR(20)              NOT NULL CHECK (type IN
-                                                            ('TOP', 'BOTTOM', 'DRESS', 'OUTER', 'UNDERWEAR',
-                                                             'ACCESSORY', 'SHOES', 'SOCKS', 'HAT', 'BAG', 'SCARF',
-                                                             'ETC')),
+                                                          ('TOP', 'BOTTOM', 'DRESS', 'OUTER', 'UNDERWEAR',
+                                                           'ACCESSORY', 'SHOES', 'SOCKS', 'HAT', 'BAG', 'SCARF',
+                                                           'ETC')),
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     deleted_at   TIMESTAMP WITH TIME ZONE,
