@@ -28,7 +28,7 @@ public class UserService {
     public UserDto signUp(UserCreateRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
-            throw new DuplicateEmailException();
+            throw DuplicateEmailException.withEmail(request.email());
         }
 
         User newUser = User.create(request.name(), request.email(), passwordEncoder.encode(request.password()));
@@ -36,7 +36,7 @@ public class UserService {
         try {
             savedUser = userRepository.saveAndFlush(newUser);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicateEmailException();
+            throw DuplicateEmailException.withEmail(request.email());
         }
 
         Profile newDefaultProfile = Profile.createDefault(savedUser);

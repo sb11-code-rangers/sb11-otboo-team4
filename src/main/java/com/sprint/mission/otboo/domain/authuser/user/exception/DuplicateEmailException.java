@@ -1,20 +1,17 @@
 package com.sprint.mission.otboo.domain.authuser.user.exception;
 
-import com.sprint.mission.otboo.global.exception.OtbooException;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 
-import java.util.Collections;
-import java.util.Map;
+public class DuplicateEmailException extends UserException {
 
-public class DuplicateEmailException extends OtbooException {
+    private static final String MESSAGE = "이미 사용 중인 이메일입니다.";
 
-    private static final String message = "이미 사용 중인 이메일입니다.";
-
-    public DuplicateEmailException() {
-        super(HttpStatus.CONFLICT, message, Collections.emptyMap());
+    private DuplicateEmailException(Map<String, Object> details) {
+        super(HttpStatus.CONFLICT, MESSAGE, details);
     }
 
-    public DuplicateEmailException(Map<String, Object> details) {
-        super(HttpStatus.CONFLICT, message, details);
+    public static DuplicateEmailException withEmail(String email) {
+        return new DuplicateEmailException(Map.of("email", email));
     }
 }

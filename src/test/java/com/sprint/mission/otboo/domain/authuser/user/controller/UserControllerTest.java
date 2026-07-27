@@ -132,7 +132,7 @@ class UserControllerTest {
             // given
             UserCreateRequest request = new UserCreateRequest("홍길동", "duplicate@test.com", "password123");
             given(userService.signUp(any(UserCreateRequest.class)))
-                    .willThrow(new DuplicateEmailException());
+                    .willThrow(DuplicateEmailException.withEmail(request.email()));
 
             // when & then
             mockMvc.perform(post("/api/users")
