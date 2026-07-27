@@ -1,5 +1,8 @@
 package com.sprint.mission.otboo.domain.authuser.user.controller;
 
+import com.navercorp.fixturemonkey.FixtureMonkey;
+import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
+import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
@@ -24,8 +27,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+
 @WebMvcTest(UserController.class)
 class UserControllerTest {
+
+    private static final FixtureMonkey fixtureMonkey = FixtureMonkey.builder()
+            .objectIntrospector(ConstructorPropertiesArbitraryIntrospector.INSTANCE)
+            .plugin(new JakartaValidationPlugin())
+            .build();
 
     @Autowired
     private MockMvc mockMvc;
@@ -44,7 +53,7 @@ class UserControllerTest {
         @DisplayName("유효한 요청으로 회원가입 시 201과 UserDto를 반환한다")
         void signUp_validRequest_returns201() throws Exception {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
             UserDto responseDto = new UserDto(
                     UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false
             );
@@ -130,7 +139,7 @@ class UserControllerTest {
         @DisplayName("중복된 이메일로 회원가입 시 409를 반환한다")
         void signUp_duplicateEmail_returns409() throws Exception {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "duplicate@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
             given(userService.signUp(any(UserCreateRequest.class)))
                     .willThrow(DuplicateEmailException.withEmail(request.email()));
 

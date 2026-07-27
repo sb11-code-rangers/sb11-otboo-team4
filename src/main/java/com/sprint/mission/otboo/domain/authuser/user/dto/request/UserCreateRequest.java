@@ -6,14 +6,16 @@ import jakarta.validation.constraints.Size;
 
 public record UserCreateRequest(
         @NotBlank(message = "이름은 필수입니다.")
+        @Size(max = 20, message = "이름은 20자 이하여야 합니다.")
         String name,
 
         @NotBlank(message = "이메일은 필수입니다.")
         @Email(message = "이메일 형식이 올바르지 않습니다.")
+        @Size(max = 255, message = "이메일은 255자 이하여야 합니다.")
         String email,
 
         @NotBlank(message = "비밀번호는 필수입니다.")
-        @Size(min = 6, message = "비밀번호는 6자 이상이어야 합니다.")
+        @Size(min = 6, max = 13, message = "비밀번호는 6자 이상 13자 이하여야 합니다.")
         String password
 ) {
 }

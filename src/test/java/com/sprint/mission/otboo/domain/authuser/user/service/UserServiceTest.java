@@ -1,5 +1,8 @@
 package com.sprint.mission.otboo.domain.authuser.user.service;
 
+import com.navercorp.fixturemonkey.FixtureMonkey;
+import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
+import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
@@ -27,18 +30,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
+    private static final FixtureMonkey fixtureMonkey = FixtureMonkey.builder()
+            .objectIntrospector(ConstructorPropertiesArbitraryIntrospector.INSTANCE)
+            .plugin(new JakartaValidationPlugin())
+            .build();
+
     @InjectMocks UserService userService;
     @Mock UserRepository mockUserRepository;
     @Mock ProfileRepository mockProfileRepository;
-    @Mock
-    UserMapper mockUserMapper;
+    @Mock UserMapper mockAuthUserMapper;
     @Mock PasswordEncoder mockPasswordEncoder;
 
     @Nested
@@ -49,7 +54,7 @@ class UserServiceTest {
         @DisplayName("회원가입 성공 시 비밀번호를 암호화하고 User, Profile을 저장한 뒤 UserDto를 반환한다")
         void signUp_success() {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
 
             given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
             given(mockPasswordEncoder.encode(request.password())).willReturn("encoded-password");
@@ -68,7 +73,7 @@ class UserServiceTest {
                     savedUser.getRole(),
                     savedUser.isLocked()
             );
-            given(mockUserMapper.userDtoFromUser(savedUser)).willReturn(expectedDto);
+            given(mockAuthUserMapper.userDtoFromUser(savedUser)).willReturn(expectedDto);
 
             // when
             UserDto result = userService.signUp(request);
@@ -79,22 +84,22 @@ class UserServiceTest {
             verify(mockPasswordEncoder).encode(request.password());
             verify(mockUserRepository).saveAndFlush(any(User.class));
             verify(mockProfileRepository).save(any(Profile.class));
-            verify(mockUserMapper).userDtoFromUser(savedUser);
+            verify(mockAuthUserMapper).userDtoFromUser(savedUser);
         }
 
         @Test
         @DisplayName("회원가입 시 평문 비밀번호가 아닌 암호화된 비밀번호로 User를 생성한다")
         void signUp_encodesPasswordBeforeCreatingUser() {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "rawPassword123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
 
             given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
-            given(mockPasswordEncoder.encode("rawPassword123")).willReturn("encoded-password");
+            given(mockPasswordEncoder.encode(request.password())).willReturn("encoded-password");
             given(mockUserRepository.saveAndFlush(any(User.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockUserMapper.userDtoFromUser(any(User.class)))
+            given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
                     .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
 
             // when
@@ -106,14 +111,14 @@ class UserServiceTest {
             User capturedUser = userCaptor.getValue();
 
             assertThat(capturedUser.getPassword()).isEqualTo("encoded-password");
-            assertThat(capturedUser.getPassword()).isNotEqualTo("rawPassword123");
+            assertThat(capturedUser.getPassword()).isNotEqualTo(request.password());
         }
 
         @Test
         @DisplayName("회원가입 시 기본 권한은 USER, 잠김 상태는 false로 생성된다")
         void signUp_createsUserWithDefaultRoleAndUnlocked() {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
 
             given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
             given(mockPasswordEncoder.encode(any())).willReturn("encoded-password");
@@ -121,7 +126,7 @@ class UserServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockUserMapper.userDtoFromUser(any(User.class)))
+            given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
                     .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
 
             // when
@@ -140,7 +145,7 @@ class UserServiceTest {
         @DisplayName("회원가입 시 저장된 User와 연결된 기본 Profile을 생성한다")
         void signUp_createsDefaultProfileLinkedToUser() {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
 
             User savedUser = User.create(request.name(), request.email(), "encoded-password");
 
@@ -149,7 +154,7 @@ class UserServiceTest {
             given(mockUserRepository.saveAndFlush(any(User.class))).willReturn(savedUser);
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockUserMapper.userDtoFromUser(savedUser))
+            given(mockAuthUserMapper.userDtoFromUser(savedUser))
                     .willReturn(new UserDto(savedUser.getId(), Instant.now(), savedUser.getEmail(), savedUser.getName(), savedUser.getRole(), savedUser.isLocked()));
 
             // when
@@ -167,7 +172,7 @@ class UserServiceTest {
         @DisplayName("회원가입은 existsByEmail을 정확히 1회 호출한다")
         void signUp_checksEmailDuplicationExactlyOnce() {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
 
             given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
             given(mockPasswordEncoder.encode(any())).willReturn("encoded-password");
@@ -175,7 +180,7 @@ class UserServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
             given(mockProfileRepository.save(any(Profile.class)))
                     .willAnswer(invocation -> invocation.getArgument(0));
-            given(mockUserMapper.userDtoFromUser(any(User.class)))
+            given(mockAuthUserMapper.userDtoFromUser(any(User.class)))
                     .willReturn(new UserDto(UUID.randomUUID(), Instant.now(), request.email(), request.name(), Role.USER, false));
 
             // when
@@ -194,7 +199,7 @@ class UserServiceTest {
         @DisplayName("이미 가입된 이메일로 회원가입 시도 시 예외가 발생하고 저장은 일어나지 않는다")
         void signUp_duplicateEmail_throwsExceptionAndDoesNotSave() {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "duplicate@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
 
             given(mockUserRepository.existsByEmail(request.email())).willReturn(true);
 
@@ -211,7 +216,7 @@ class UserServiceTest {
         @DisplayName("existsByEmail 체크를 통과했지만 저장 시점에 동시성으로 인해 중복 제약이 걸리면 예외가 발생하고 Profile은 저장되지 않는다")
         void signUp_raceConditionOnSave_throwsExceptionAndDoesNotSaveProfile() {
             // given
-            UserCreateRequest request = new UserCreateRequest("홍길동", "hong@test.com", "password123");
+            UserCreateRequest request = fixtureMonkey.giveMeBuilder(UserCreateRequest.class).sample();
 
             given(mockUserRepository.existsByEmail(request.email())).willReturn(false);
             given(mockPasswordEncoder.encode(any())).willReturn("encoded-password");
@@ -223,7 +228,7 @@ class UserServiceTest {
                     .isInstanceOf(RuntimeException.class);
 
             verify(mockProfileRepository, never()).save(any());
-            verify(mockUserMapper, never()).userDtoFromUser(any());
+            verify(mockAuthUserMapper, never()).userDtoFromUser(any());
         }
     }
 }
