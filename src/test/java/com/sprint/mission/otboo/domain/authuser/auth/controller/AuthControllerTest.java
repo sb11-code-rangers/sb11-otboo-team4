@@ -12,16 +12,28 @@ import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.global.cookie.RefreshTokenCookieProvider;
+import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -34,7 +46,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
+@Import(AuthControllerTest.SecurityArgumentResolverConfig.class)
 class AuthControllerTest {
+
+    @TestConfiguration
+    static class SecurityArgumentResolverConfig implements WebMvcConfigurer {
+        @Override
+        public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+            resolvers.add(new AuthenticationPrincipalArgumentResolver());
+        }
+    }
 
     private static final FixtureMonkey fixtureMonkey = FixtureMonkey.builder()
             .objectIntrospector(ConstructorPropertiesArbitraryIntrospector.INSTANCE)
@@ -49,6 +70,11 @@ class AuthControllerTest {
 
     @MockitoBean
     private RefreshTokenCookieProvider refreshTokenCookieProvider;
+
+    private Authentication authenticationOf(UUID userId) {
+        UserPrincipal principal = new UserPrincipal(userId, "USER");
+        return new UsernamePasswordAuthenticationToken(principal, null, List.of(new SimpleGrantedAuthority("USER")));
+    }
 
     @Nested
     @DisplayName("로그인 성공")
@@ -155,6 +181,31 @@ class AuthControllerTest {
                     .andExpect(status().isForbidden());
 
             verify(refreshTokenCookieProvider, never()).attach(any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("로그아웃")
+    class SignOut {
+
+        @AfterEach
+        void tearDown() {
+            SecurityContextHolder.clearContext();
+        }
+
+        @Test
+        @DisplayName("인증된 사용자가 로그아웃하면 204를 반환하고, 자신의 세션을 폐기한 뒤 리프레시 토큰 쿠키를 지운다")
+        void signOut_authenticatedUser_returns204RevokesOwnSessionAndClearsCookie() throws Exception {
+            // given
+            UUID userId = UUID.randomUUID();
+            SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
+
+            // when & then
+            mockMvc.perform(post("/api/auth/sign-out"))
+                    .andExpect(status().isNoContent());
+
+            verify(authService).signOut(userId);
+            verify(refreshTokenCookieProvider).clear(any(HttpServletResponse.class));
         }
     }
 }
