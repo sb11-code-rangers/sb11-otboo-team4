@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -49,9 +50,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             authenticationAccessToken(token);
         } catch (ExpiredTokenException e) {
             response.setHeader(TOKEN_EXPIRED_HEADER, "true");
-            log.warn("만료된 토큰, 재로그인 필요");
+            log.warn("만료된 토큰, Refresh 필요");
         } catch (UserSessionExpiredException e) {
-            response.setHeader(TOKEN_EXPIRED_HEADER, "true");
             log.warn("사용자 세션이 만료되었습니다. 재로그인 필요");
         } catch (JwtException | UserSessionException e) {
             log.warn("인증 실패: {}", e.getMessage());
@@ -78,15 +78,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Claims claims = jwtProvider.parseAccessTokenClaims(token);
 
         UUID userId = UUID.fromString(claims.getSubject());
+
         UUID sid = UUID.fromString(claims.get("sid", String.class));
         String role = claims.get("role", String.class);
-
-        UserSession userSession = userSessionRegistry.verifyLoginSession(userId, sid);
+        userSessionRegistry.verifyLoginSession(userId, sid);
 
         UserPrincipal userPrincipal = new UserPrincipal(userId, role);
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(userPrincipal.role()));
 
-        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userPrincipal, "", authorities);
-        SecurityContextHolder.getContext().setAuthentication(authToken);
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userPrincipal, null, authorities);
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authToken);
+        SecurityContextHolder.setContext(context);
     }
 }
