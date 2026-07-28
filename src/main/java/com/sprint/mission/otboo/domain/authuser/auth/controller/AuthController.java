@@ -24,7 +24,7 @@ public class AuthController implements AuthApi {
     private final RefreshTokenCookieProvider refreshTokenCookieProvider;
 
     @Override
-    @RequestMapping("/sign-out")
+    @PostMapping("/sign-out")
     public ResponseEntity<Void> signOut(
             @CurrentUser UserPrincipal principal,
             HttpServletResponse response
