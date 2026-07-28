@@ -18,11 +18,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -189,6 +185,24 @@ class AuthServiceTest {
                     .isInstanceOf(AccountLockedException.class);
 
             verify(mockUserSessionRegistry, never()).issue();
+        }
+    }
+
+    @Nested
+    @DisplayName("로그아웃")
+    class SignOut {
+
+        @Test
+        @DisplayName("주어진 userId로 세션을 폐기(revoke)한다")
+        void signOut_revokesSessionForGivenUserId() {
+            // given
+            UUID userId = UUID.randomUUID();
+
+            // when
+            authService.signOut(userId);
+
+            // then
+            verify(mockUserSessionRegistry).revoke(userId);
         }
     }
 }
