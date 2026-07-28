@@ -14,7 +14,8 @@ public interface FeedApi {
   @Operation(summary = "피드 등록", description = "피드 등록 API")
   @ApiResponses({
       @ApiResponse(responseCode = "201", description = "피드 등록 성공"),
-      @ApiResponse(responseCode = "400", description = "피드 등록 실패")
+      @ApiResponse(responseCode = "400", description = "피드 등록 실패"),
+      @ApiResponse(responseCode = "403", description = "작성자 불일치")
   })
   ResponseEntity<FeedDto> createFeed(FeedCreateRequest request);
 }
