@@ -24,6 +24,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("FeedService")
@@ -56,9 +57,16 @@ class FeedServiceTest {
           .set("authorId", UUID.randomUUID())
           .sample();
 
-      // when & then
+      /// when & then
       assertThatThrownBy(() -> feedService.create(request, currentUserId))
-          .isInstanceOf(FeedForbiddenException.class);
+          .isInstanceOf(FeedForbiddenException.class)
+          .satisfies(ex -> {
+            FeedForbiddenException fe = (FeedForbiddenException) ex;
+            assertThat(fe.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
+            assertThat(fe.getDetails())
+                .containsEntry("currentUserId", currentUserId)
+                .containsKey("requestedAuthorId");
+          });
     }
 
     @Test
