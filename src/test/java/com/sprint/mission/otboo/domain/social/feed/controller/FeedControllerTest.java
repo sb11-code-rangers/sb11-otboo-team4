@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.navercorp.fixturemonkey.FixtureMonkey;
+import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
+import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedCreateRequest;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedDto;
 import com.sprint.mission.otboo.domain.social.feed.service.FeedService;
@@ -27,6 +30,11 @@ import tools.jackson.databind.ObjectMapper;
 @DisplayName("FeedController")
 class FeedControllerTest {
 
+  static final FixtureMonkey fm = FixtureMonkey.builder()
+      .objectIntrospector(ConstructorPropertiesArbitraryIntrospector.INSTANCE)
+      .plugin(new JakartaValidationPlugin())
+      .build();
+
   @Autowired
   MockMvc mockMvc;
 
@@ -45,8 +53,9 @@ class FeedControllerTest {
     void returns201AndFeedDto_whenRequestIsValid() throws Exception {
       // given
       UUID authorId = UUID.randomUUID();
-      FeedCreateRequest request = new FeedCreateRequest(
-          authorId, UUID.randomUUID(), List.of(UUID.randomUUID()), "오늘의 착장");
+      FeedCreateRequest request = fm.giveMeBuilder(FeedCreateRequest.class)
+          .set("authorId", authorId)
+          .sample();
 
       FeedDto response = new FeedDto(
           UUID.randomUUID(), Instant.now(), Instant.now(), "오늘의 착장", 0L, 0, false);
