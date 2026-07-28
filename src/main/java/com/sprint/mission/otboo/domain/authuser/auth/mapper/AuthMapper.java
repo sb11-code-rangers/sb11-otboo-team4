@@ -4,21 +4,26 @@ import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
+import com.sprint.mission.otboo.global.security.details.CustomUserDetails;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-public final class AuthMapper {
+@Component
+@RequiredArgsConstructor
+public class AuthMapper {
 
-    private AuthMapper() {}
+    private final UserMapper userMapper;
 
-    public static SignInDto signInDtoFrom(User user, String accessToken, String refreshToken) {
+    public SignInDto signInDtoFrom(CustomUserDetails principal, String accessToken, String refreshToken) {
         return new SignInDto(
-                jwtDtoFrom(user, accessToken),
+                jwtDtoFrom(principal, accessToken),
                 refreshToken
         );
     }
 
-    public static JwtDto jwtDtoFrom(User user, String accessToken) {
+    public JwtDto jwtDtoFrom(CustomUserDetails principal, String accessToken) {
         return new JwtDto(
-                UserMapper.userDtoFromUser(user),
+                userMapper.userDtoFrom(principal),
                 accessToken
         );
     }

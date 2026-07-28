@@ -7,9 +7,10 @@ import com.sprint.mission.otboo.domain.authuser.auth.dto.request.SignInRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.InvalidCredentialsException;
+import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
-import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
-import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
+import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
+import com.sprint.mission.otboo.global.security.details.CustomUserDetails;
 import com.sprint.mission.otboo.global.security.jwt.JwtProvider;
 import com.sprint.mission.otboo.global.usersession.UserSession;
 import com.sprint.mission.otboo.global.usersession.UserSessionRegistry;
@@ -17,15 +18,20 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,33 +49,36 @@ class AuthServiceTest {
             .build();
 
     @InjectMocks AuthService authService;
-    @Mock UserRepository mockUserRepository;
     @Mock UserSessionRegistry mockUserSessionRegistry;
     @Mock JwtProvider mockJwtProvider;
-    @Mock PasswordEncoder mockPasswordEncoder;
+    @Mock AuthenticationManager mockAuthenticationManager;
+    @Spy AuthMapper authMapper = new AuthMapper(new UserMapper());
 
     @Nested
     @DisplayName("로그인 성공")
     class SignInSuccess {
 
         @Test
-        @DisplayName("자격증명이 유효하면 세션을 발급하고 토큰을 생성해 SignInDto를 반환한다")
+        @DisplayName("AuthenticationManager 인증에 성공하면 세션을 발급하고 토큰을 생성해 SignInDto를 반환한다")
         void signIn_success_returnsSignInDto() {
             // given
             SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
             User user = User.create("홍길동", request.username(), "encoded-password");
+            CustomUserDetails principal = new CustomUserDetails(user);
+
+            Authentication authentication = mock(Authentication.class);
+            given(authentication.getPrincipal()).willReturn(principal);
+            given(mockAuthenticationManager.authenticate(any())).willReturn(authentication);
 
             UserSession issuedSession = new UserSession(UUID.randomUUID(), UUID.randomUUID(), Instant.now());
             Instant refreshExpiresAt = Instant.now().plus(14, ChronoUnit.DAYS);
 
-            given(mockUserRepository.findByEmail(request.username())).willReturn(Optional.of(user));
-            given(mockPasswordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
             given(mockUserSessionRegistry.issue()).willReturn(issuedSession);
             given(mockJwtProvider.createAccessToken(
-                    user.getId(), user.getRole().name(), issuedSession.sessionId(), issuedSession.issuedAt()))
+                    principal.getUserId(), principal.getRole().name(), issuedSession.sessionId(), issuedSession.issuedAt()))
                     .willReturn("access-token");
             given(mockJwtProvider.createRefreshToken(
-                    user.getId(), issuedSession.sessionId(), issuedSession.currentRefreshJti(), issuedSession.issuedAt()))
+                    principal.getUserId(), issuedSession.sessionId(), issuedSession.currentRefreshJti(), issuedSession.issuedAt()))
                     .willReturn("refresh-token");
             given(mockJwtProvider.getRefreshTokenExpiresAt(issuedSession.issuedAt())).willReturn(refreshExpiresAt);
 
@@ -80,7 +89,36 @@ class AuthServiceTest {
             assertThat(result.jwtDto().accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
             assertThat(result.jwtDto().userDto().email()).isEqualTo(user.getEmail());
-            verify(mockUserSessionRegistry).save(user.getId(), issuedSession, refreshExpiresAt);
+            verify(mockUserSessionRegistry).save(principal.getUserId(), issuedSession, refreshExpiresAt);
+        }
+
+        @Test
+        @DisplayName("AuthenticationManager에는 폼에 입력된 username/password 그대로 인증되지 않은 토큰을 전달한다")
+        void signIn_success_authenticatesWithRawCredentials() {
+            // given
+            SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
+            User user = User.create("홍길동", request.username(), "encoded-password");
+            CustomUserDetails principal = new CustomUserDetails(user);
+
+            Authentication authentication = mock(Authentication.class);
+            given(authentication.getPrincipal()).willReturn(principal);
+            given(mockAuthenticationManager.authenticate(any())).willReturn(authentication);
+            given(mockUserSessionRegistry.issue())
+                    .willReturn(new UserSession(UUID.randomUUID(), UUID.randomUUID(), Instant.now()));
+            given(mockJwtProvider.createAccessToken(any(), any(), any(), any())).willReturn("access-token");
+            given(mockJwtProvider.createRefreshToken(any(), any(), any(), any())).willReturn("refresh-token");
+            given(mockJwtProvider.getRefreshTokenExpiresAt(any())).willReturn(Instant.now());
+
+            // when
+            authService.signIn(request);
+
+            // then
+            ArgumentCaptor<Authentication> tokenCaptor = ArgumentCaptor.forClass(Authentication.class);
+            verify(mockAuthenticationManager).authenticate(tokenCaptor.capture());
+            UsernamePasswordAuthenticationToken captured = (UsernamePasswordAuthenticationToken) tokenCaptor.getValue();
+            assertThat(captured.getPrincipal()).isEqualTo(request.username());
+            assertThat(captured.getCredentials()).isEqualTo(request.password());
+            assertThat(captured.isAuthenticated()).isFalse();
         }
 
         @Test
@@ -89,10 +127,13 @@ class AuthServiceTest {
             // given
             SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
             User user = User.create("홍길동", request.username(), "encoded-password");
-            UserSession issuedSession = new UserSession(UUID.randomUUID(), UUID.randomUUID(), Instant.now());
+            CustomUserDetails principal = new CustomUserDetails(user);
 
-            given(mockUserRepository.findByEmail(request.username())).willReturn(Optional.of(user));
-            given(mockPasswordEncoder.matches(any(), any())).willReturn(true);
+            Authentication authentication = mock(Authentication.class);
+            given(authentication.getPrincipal()).willReturn(principal);
+            given(mockAuthenticationManager.authenticate(any())).willReturn(authentication);
+
+            UserSession issuedSession = new UserSession(UUID.randomUUID(), UUID.randomUUID(), Instant.now());
             given(mockUserSessionRegistry.issue()).willReturn(issuedSession);
             given(mockJwtProvider.createAccessToken(any(), any(), any(), any())).willReturn("access-token");
             given(mockJwtProvider.createRefreshToken(any(), any(), any(), any())).willReturn("refresh-token");
@@ -115,11 +156,12 @@ class AuthServiceTest {
     class InvalidCredentials {
 
         @Test
-        @DisplayName("이메일로 사용자를 찾을 수 없으면 InvalidCredentialsException을 던지고 세션을 발급하지 않는다")
-        void signIn_userNotFound_throwsInvalidCredentialsExceptionAndDoesNotIssueSession() {
+        @DisplayName("AuthenticationManager가 BadCredentialsException을 던지면 InvalidCredentialsException으로 변환하고 세션을 발급하지 않는다")
+        void signIn_badCredentials_throwsInvalidCredentialsExceptionAndDoesNotIssueSession() {
             // given
             SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
-            given(mockUserRepository.findByEmail(request.username())).willReturn(Optional.empty());
+            given(mockAuthenticationManager.authenticate(any()))
+                    .willThrow(new BadCredentialsException("Bad credentials"));
 
             // when & then
             assertThatThrownBy(() -> authService.signIn(request))
@@ -128,23 +170,6 @@ class AuthServiceTest {
             verify(mockUserSessionRegistry, never()).issue();
             verify(mockJwtProvider, never()).createAccessToken(any(), any(), any(), any());
         }
-
-        @Test
-        @DisplayName("비밀번호가 일치하지 않으면 InvalidCredentialsException을 던지고 세션을 발급하지 않는다")
-        void signIn_passwordMismatch_throwsInvalidCredentialsExceptionAndDoesNotIssueSession() {
-            // given
-            SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
-            User user = User.create("홍길동", request.username(), "encoded-password");
-
-            given(mockUserRepository.findByEmail(request.username())).willReturn(Optional.of(user));
-            given(mockPasswordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
-
-            // when & then
-            assertThatThrownBy(() -> authService.signIn(request))
-                    .isInstanceOf(InvalidCredentialsException.class);
-
-            verify(mockUserSessionRegistry, never()).issue();
-        }
     }
 
     @Nested
@@ -152,15 +177,12 @@ class AuthServiceTest {
     class AccountLocked {
 
         @Test
-        @DisplayName("비밀번호는 일치하지만 계정이 잠겨 있으면 AccountLockedException을 던지고 세션을 발급하지 않는다")
-        void signIn_lockedAccount_throwsAccountLockedExceptionAndDoesNotIssueSession() {
+        @DisplayName("AuthenticationManager가 LockedException을 던지면 AccountLockedException으로 변환하고 세션을 발급하지 않는다")
+        void signIn_locked_throwsAccountLockedExceptionAndDoesNotIssueSession() {
             // given
             SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
-            User lockedUser = User.create("홍길동", request.username(), "encoded-password");
-            lockedUser.lock(LockReason.ADMIN_ACTION);
-
-            given(mockUserRepository.findByEmail(request.username())).willReturn(Optional.of(lockedUser));
-            given(mockPasswordEncoder.matches(request.password(), lockedUser.getPassword())).willReturn(true);
+            given(mockAuthenticationManager.authenticate(any()))
+                    .willThrow(new LockedException("Account is locked"));
 
             // when & then
             assertThatThrownBy(() -> authService.signIn(request))
