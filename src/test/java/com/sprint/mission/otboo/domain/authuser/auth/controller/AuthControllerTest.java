@@ -250,7 +250,7 @@ class AuthControllerTest {
         @Test
         @DisplayName("사용자를 찾을 수 없으면 404를 반환하고 쿠키를 첨부하지 않는다")
         void refresh_userNotFound_returns404AndDoesNotAttachCookie() throws Exception {
-            given(authService.refresh(any())).willThrow(UserNotFoundException.withId());
+            given(authService.refresh(any())).willThrow(UserNotFoundException.withNone());
 
             mockMvc.perform(post("/api/auth/refresh")
                             .cookie(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "some-token")))

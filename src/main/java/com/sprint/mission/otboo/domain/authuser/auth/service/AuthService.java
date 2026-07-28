@@ -93,7 +93,7 @@ public class AuthService {
         UUID jti = UUID.fromString(claims.getId());
 
         User foundUser = userRepository.findById(userId)
-                .orElseThrow(UserNotFoundException::withId);
+                .orElseThrow(() -> UserNotFoundException.withNone());
 
         if (foundUser.isLocked()) {
             userSessionRegistry.revoke(foundUser.getId());

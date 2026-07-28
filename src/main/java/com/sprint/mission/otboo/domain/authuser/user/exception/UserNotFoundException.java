@@ -13,7 +13,7 @@ public class UserNotFoundException extends UserException{
         super(HttpStatus.NOT_FOUND, MESSAGE, details);
     }
 
-    public static UserNotFoundException withId() {
+    public static UserNotFoundException withNone() {
         return new UserNotFoundException(Collections.emptyMap());
     }
 }

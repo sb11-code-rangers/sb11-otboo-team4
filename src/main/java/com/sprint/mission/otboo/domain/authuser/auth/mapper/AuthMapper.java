@@ -14,20 +14,6 @@ public class AuthMapper {
 
     private final UserMapper userMapper;
 
-    public SignInDto signInDtoFrom(User user, String accessToken, String refreshToken) {
-        return new SignInDto(
-                jwtDtoFrom(user, accessToken),
-                refreshToken
-        );
-    }
-
-    public JwtDto jwtDtoFrom(User user, String accessToken) {
-        return new JwtDto(
-                userMapper.userDtoFrom(user),
-                accessToken
-        );
-    }
-
     public SignInDto signInDtoFrom(CustomUserDetails principal, String accessToken, String refreshToken) {
         return new SignInDto(
                 jwtDtoFrom(principal, accessToken),
