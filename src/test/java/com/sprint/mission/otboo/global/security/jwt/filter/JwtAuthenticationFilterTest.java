@@ -156,8 +156,8 @@ class JwtAuthenticationFilterTest {
     class InvalidatedSession {
 
         @Test
-        @DisplayName("인증을 설정하지 않고, X-Token-Expired 헤더를 true로 설정한 뒤 다음 필터로 넘어간다")
-        void doFilterInternal_sessionInvalidated_setsHeaderAndContinuesChain() throws Exception {
+        @DisplayName("인증을 설정하지 않고, X-Token-Expired 헤더 없이 다음 필터로 넘어간다")
+        void doFilterInternal_sessionInvalidated_continuesChainWithoutAuthentication() throws Exception {
             // given
             UUID userId = UUID.randomUUID();
             UUID sid = UUID.randomUUID();
@@ -175,8 +175,9 @@ class JwtAuthenticationFilterTest {
 
             // then
             assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-            assertThat(response.getHeader("X-Token-Expired")).isEqualTo("true");
+            assertThat(response.getHeader("X-Token-Expired")).isNull();
             verify(mockFilterChain).doFilter(request, response);
         }
     }
+
 }
