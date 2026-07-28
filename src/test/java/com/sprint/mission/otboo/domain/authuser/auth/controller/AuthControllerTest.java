@@ -11,8 +11,11 @@ import com.sprint.mission.otboo.domain.authuser.auth.exception.InvalidCredential
 import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
+import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.global.cookie.RefreshTokenCookieProvider;
+import com.sprint.mission.otboo.global.security.jwt.exception.InvalidRefreshTokenException;
 import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -206,6 +209,66 @@ class AuthControllerTest {
 
             verify(authService).signOut(userId);
             verify(refreshTokenCookieProvider).clear(any(HttpServletResponse.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("토큰 재발급")
+    class Refresh {
+
+        @Test
+        @DisplayName("유효한 refresh token 쿠키가 있으면 200과 새 JwtDto를 반환하고 리프레시 토큰 쿠키를 갱신한다")
+        void refresh_validCookie_returns200AndAttachesNewRefreshTokenCookie() throws Exception {
+            // given
+            UserDto userDto = new UserDto(UUID.randomUUID(), Instant.now(), "hong@test.com", "홍길동", Role.USER, false);
+            JwtDto jwtDto = new JwtDto(userDto, "new-access-token");
+            SignInDto signInDto = new SignInDto(jwtDto, "new-refresh-token");
+            given(authService.refresh("old-refresh-token")).willReturn(signInDto);
+
+            // when & then
+            mockMvc.perform(post("/api/auth/refresh")
+                            .cookie(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "old-refresh-token")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.accessToken").value("new-access-token"))
+                    .andExpect(jsonPath("$.refreshToken").doesNotExist());
+
+            verify(refreshTokenCookieProvider).attach(any(HttpServletResponse.class), eq("new-refresh-token"));
+        }
+
+        @Test
+        @DisplayName("refresh token이 만료/무효하면 401을 반환하고 쿠키를 다시 첨부하지 않는다")
+        void refresh_invalidToken_returns401AndDoesNotAttachCookie() throws Exception {
+            given(authService.refresh(any())).willThrow(InvalidRefreshTokenException.withNone());
+
+            mockMvc.perform(post("/api/auth/refresh")
+                            .cookie(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "bad-token")))
+                    .andExpect(status().isUnauthorized());
+
+            verify(refreshTokenCookieProvider, never()).attach(any(), any());
+        }
+
+        @Test
+        @DisplayName("사용자를 찾을 수 없으면 404를 반환하고 쿠키를 첨부하지 않는다")
+        void refresh_userNotFound_returns404AndDoesNotAttachCookie() throws Exception {
+            given(authService.refresh(any())).willThrow(UserNotFoundException.withId());
+
+            mockMvc.perform(post("/api/auth/refresh")
+                            .cookie(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "some-token")))
+                    .andExpect(status().isNotFound());
+
+            verify(refreshTokenCookieProvider, never()).attach(any(), any());
+        }
+
+        @Test
+        @DisplayName("계정이 잠겨 있으면 403을 반환하고 쿠키를 첨부하지 않는다")
+        void refresh_lockedAccount_returns403AndDoesNotAttachCookie() throws Exception {
+            given(authService.refresh(any())).willThrow(AccountLockedException.withEmail("hong@test.com"));
+
+            mockMvc.perform(post("/api/auth/refresh")
+                            .cookie(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "some-token")))
+                    .andExpect(status().isForbidden());
+
+            verify(refreshTokenCookieProvider, never()).attach(any(), any());
         }
     }
 }
