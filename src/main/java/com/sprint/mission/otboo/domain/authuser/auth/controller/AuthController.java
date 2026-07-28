@@ -6,15 +6,14 @@ import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.global.cookie.RefreshTokenCookieProvider;
+import com.sprint.mission.otboo.global.security.jwt.filter.CurrentUser;
+import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,6 +22,19 @@ public class AuthController implements AuthApi {
 
     private final AuthService authService;
     private final RefreshTokenCookieProvider refreshTokenCookieProvider;
+
+    @Override
+    @RequestMapping("/sign-out")
+    public ResponseEntity<Void> signOut(
+            @CurrentUser UserPrincipal principal,
+            HttpServletResponse response
+    ) {
+        authService.signOut(principal.userId());
+        refreshTokenCookieProvider.clear(response);
+        return ResponseEntity
+                .status(HttpStatus.NO_CONTENT)
+                .build();
+    }
 
     @Override
     @PostMapping("/sign-in")

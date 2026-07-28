@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.auth.controller.api;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.request.SignInRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
+import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -10,6 +11,13 @@ import org.springframework.http.ResponseEntity;
 
 @Tag(name = "인증", description = "인증 관련 API")
 public interface AuthApi {
+
+    @Operation(summary = "로그아웃", description = "로그아웃합니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "500", description = "Redis 장애")
+    })
+    ResponseEntity<Void> signOut(UserPrincipal principal, HttpServletResponse response);
 
     @Operation(summary = "로그인", description = "이메일/비밀번호 기반 로그인 API")
     @ApiResponses({
