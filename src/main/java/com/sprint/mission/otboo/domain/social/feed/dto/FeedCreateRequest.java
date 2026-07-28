@@ -9,7 +9,7 @@ import java.util.UUID;
 public record FeedCreateRequest(
     @NotNull UUID authorId,
     @NotNull UUID weatherId,
-    @NotEmpty List<UUID> clothesIds,
+    @NotEmpty List<@NotNull UUID> clothesIds,
     @NotBlank String content
 ) {
 
