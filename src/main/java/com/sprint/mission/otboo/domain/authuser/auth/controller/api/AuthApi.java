@@ -27,4 +27,6 @@ public interface AuthApi {
             @ApiResponse(responseCode = "403", description = "계정 잠김")
     })
     ResponseEntity<JwtDto> signIn(SignInRequest request, HttpServletResponse response);
+
+    ResponseEntity<JwtDto> refresh(String refreshToken, HttpServletResponse response);
 }

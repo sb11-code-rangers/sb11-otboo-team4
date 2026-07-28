@@ -48,4 +48,17 @@ public class AuthController implements AuthApi {
                 .status(HttpStatus.OK)
                 .body(result.jwtDto());
     }
+
+    @Override
+    @PostMapping("/refresh")
+    public ResponseEntity<JwtDto> refresh(
+            @CookieValue(name = RefreshTokenCookieProvider.REFRESH_TOKEN) String refreshToken,
+            HttpServletResponse response
+    ) {
+        SignInDto result = authService.refresh(refreshToken);
+        refreshTokenCookieProvider.attach(response, result.refreshToken());
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(result.jwtDto());
+    }
 }
