@@ -1,5 +1,6 @@
 package com.sprint.mission.otboo.domain.authuser.auth.controller.api;
 
+import com.sprint.mission.otboo.domain.authuser.auth.dto.request.ResetPasswordRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.request.SignInRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
@@ -29,6 +30,8 @@ public interface AuthApi {
   })
   ResponseEntity<JwtDto> signIn(SignInRequest request, HttpServletResponse response);
 
+  ResponseEntity<Void> resetPassword(ResetPasswordRequest request);
+
   @Operation(summary = "액세스 토큰 재발급", description = "리프레시 토큰 쿠키를 이용해 액세스 토큰과 리프레시 토큰을 재발급합니다(Refresh Token Rotation).")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "재발급 성공"),
@@ -38,4 +41,6 @@ public interface AuthApi {
       @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
   })
   ResponseEntity<JwtDto> refresh(String refreshToken, HttpServletResponse response);
+
+
 }
