@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.auth.controller;
 
 import com.sprint.mission.otboo.domain.authuser.auth.controller.api.AuthApi;
+import com.sprint.mission.otboo.domain.authuser.auth.dto.request.ResetPasswordRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.request.SignInRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
@@ -47,6 +48,15 @@ public class AuthController implements AuthApi {
     return ResponseEntity
         .status(HttpStatus.OK)
         .body(result.jwtDto());
+  }
+
+  @Override
+  @PostMapping("/reset-password")
+  public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    authService.resetPassword(request);
+    return ResponseEntity
+        .status(HttpStatus.OK)
+        .build();
   }
 
   @Override
