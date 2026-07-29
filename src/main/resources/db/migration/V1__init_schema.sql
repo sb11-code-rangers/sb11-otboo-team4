@@ -22,7 +22,9 @@ CREATE TABLE weathers
     forecasted_at             TIMESTAMP WITH TIME ZONE NOT NULL,
     forecast_at               TIMESTAMP WITH TIME ZONE NOT NULL,
     sky_status                VARCHAR(20)              NOT NULL CHECK (sky_status IN ('CLEAR', 'MOSTLY_CLOUDY', 'CLOUDY')),
-    precipitation_type        VARCHAR(20)              NOT NULL CHECK (precipitation_type IN ('NONE', 'RAIN', 'RAIN_SNOW', 'SNOW', 'SHOWER')),
+    precipitation_type        VARCHAR(20)              NOT NULL CHECK (precipitation_type IN
+                                                                       ('NONE', 'RAIN', 'RAIN_SNOW',
+                                                                        'SNOW', 'SHOWER')),
     precipitation_amount      DOUBLE PRECISION         NOT NULL,
     precipitation_probability DOUBLE PRECISION         NOT NULL,
     humidity_current          DOUBLE PRECISION         NOT NULL,
@@ -114,8 +116,10 @@ CREATE TABLE clothes
     image_url    VARCHAR(255),
     purchase_url VARCHAR(500),
     type         VARCHAR(20)              NOT NULL CHECK (type IN
-                                                          ('TOP', 'BOTTOM', 'DRESS', 'OUTER', 'UNDERWEAR',
-                                                           'ACCESSORY', 'SHOES', 'SOCKS', 'HAT', 'BAG', 'SCARF',
+                                                          ('TOP', 'BOTTOM', 'DRESS', 'OUTER',
+                                                           'UNDERWEAR',
+                                                           'ACCESSORY', 'SHOES', 'SOCKS', 'HAT',
+                                                           'BAG', 'SCARF',
                                                            'ETC')),
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at   TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -145,7 +149,8 @@ CREATE TABLE feeds
     author_id                 UUID                     NOT NULL,
     weather_id                UUID,
     sky_status                VARCHAR(20) CHECK (sky_status IN ('CLEAR', 'MOSTLY_CLOUDY', 'CLOUDY')),
-    precipitation_type        VARCHAR(20) CHECK (precipitation_type IN ('NONE', 'RAIN', 'RAIN_SNOW', 'SNOW', 'SHOWER')),
+    precipitation_type        VARCHAR(20) CHECK (precipitation_type IN
+                                                 ('NONE', 'RAIN', 'RAIN_SNOW', 'SNOW', 'SHOWER')),
     precipitation_amount      DOUBLE PRECISION,
     precipitation_probability DOUBLE PRECISION,
     temperature_current       DOUBLE PRECISION,

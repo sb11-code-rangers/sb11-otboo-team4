@@ -20,4 +20,5 @@ ALTER TABLE profiles
     ALTER COLUMN created_at DROP DEFAULT;
 
 ALTER TABLE profiles
-    DROP COLUMN name;
+DROP
+COLUMN name;
