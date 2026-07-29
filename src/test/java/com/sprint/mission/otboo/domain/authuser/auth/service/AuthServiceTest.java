@@ -11,6 +11,7 @@ import com.sprint.mission.otboo.domain.authuser.auth.exception.InvalidCredential
 import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
+import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
@@ -34,6 +35,11 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import com.sprint.mission.otboo.domain.authuser.auth.dto.request.ResetPasswordRequest;
+import com.sprint.mission.otboo.domain.authuser.auth.event.TempPasswordRequestedEvent;
+import com.sprint.mission.otboo.global.temppassword.generator.TempPasswordGenerator;
+import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -48,6 +54,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -81,10 +88,17 @@ class AuthServiceTest {
   UserRepository mockUserRepository;
   @Spy
   AuthMapper authMapper = new AuthMapper(new UserMapper());
+  @Mock
+  TempPasswordGenerator mockTempPasswordGenerator;
+  @Mock
+  TempPasswordRegistry mockTempPasswordRegistry;
+  @Mock
+  ApplicationEventPublisher mockEventPublisher;
 
   private User fixtureUnlockedUser() {
     User user = entityFixtureMonkey.giveMeBuilder(User.class)
         .set("id", UUID.randomUUID())
+        .set("role", Role.USER)
         .sample();
     user.unlock();
     return user;
@@ -420,8 +434,10 @@ class AuthServiceTest {
       // given
       User lockedUser = entityFixtureMonkey.giveMeBuilder(User.class)
           .set("id", UUID.randomUUID())
+          .set("email", "hong@test.com")
           .sample();
       lockedUser.lock(LockReason.ADMIN_ACTION);
+
       UUID sid = UUID.randomUUID();
       UUID jti = UUID.randomUUID();
       given(mockJwtProvider.parseRefreshTokenClaims(anyString()))
@@ -498,6 +514,67 @@ class AuthServiceTest {
           .isInstanceOf(RefreshTokenReusedException.class);
 
       verify(mockJwtProvider, never()).createAccessToken(any(), any(), any(), any());
+    }
+  }
+
+  @Nested
+  @DisplayName("임시 비밀번호 발급")
+  class ResetPassword {
+
+    @Test
+    @DisplayName("가입된 이메일이면 임시 비밀번호를 생성해 저장하고 발급 이벤트를 발행한다")
+    void resetPassword_existingEmail_savesTempPasswordAndPublishesEvent() {
+      // given
+      User user = fixtureUnlockedUser();
+      ResetPasswordRequest request = new ResetPasswordRequest(user.getEmail());
+      given(mockUserRepository.findByEmail(user.getEmail())).willReturn(Optional.of(user));
+      given(mockTempPasswordGenerator.generate()).willReturn("Temp123!@#$");
+
+      // when
+      authService.resetPassword(request);
+
+      // then
+      verify(mockTempPasswordRegistry).save(user.getId(), "Temp123!@#$");
+
+      ArgumentCaptor<TempPasswordRequestedEvent> eventCaptor =
+          ArgumentCaptor.forClass(TempPasswordRequestedEvent.class);
+      verify(mockEventPublisher).publishEvent(eventCaptor.capture());
+      assertThat(eventCaptor.getValue().email()).isEqualTo(user.getEmail());
+      assertThat(eventCaptor.getValue().rawTempPassword()).isEqualTo("Temp123!@#$");
+    }
+
+    @Test
+    @DisplayName("가입되지 않은 이메일이면 아무 것도 하지 않고 예외 없이 종료한다 (이메일 존재 여부 노출 방지)")
+    void resetPassword_unknownEmail_doesNothingAndDoesNotThrow() {
+      // given
+      ResetPasswordRequest request = new ResetPasswordRequest("unknown@test.com");
+      given(mockUserRepository.findByEmail(request.email())).willReturn(Optional.empty());
+
+      // when & then
+      assertThatCode(() -> authService.resetPassword(request)).doesNotThrowAnyException();
+
+      verify(mockTempPasswordGenerator, never()).generate();
+      verify(mockTempPasswordRegistry, never()).save(any(), any());
+      verify(mockEventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("호출할 때마다 새로운 임시 비밀번호를 생성기로부터 새로 발급받는다")
+    void resetPassword_calledTwice_generatesTempPasswordEachTime() {
+      // given
+      User user = fixtureUnlockedUser();
+      ResetPasswordRequest request = new ResetPasswordRequest(user.getEmail());
+      given(mockUserRepository.findByEmail(user.getEmail())).willReturn(Optional.of(user));
+      given(mockTempPasswordGenerator.generate()).willReturn("first-pw", "second-pw");
+
+      // when
+      authService.resetPassword(request);
+      authService.resetPassword(request);
+
+      // then
+      verify(mockTempPasswordGenerator, times(2)).generate();
+      verify(mockTempPasswordRegistry).save(user.getId(), "first-pw");
+      verify(mockTempPasswordRegistry).save(user.getId(), "second-pw");
     }
   }
 }

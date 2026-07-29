@@ -34,6 +34,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import com.sprint.mission.otboo.domain.authuser.auth.dto.request.ResetPasswordRequest;
+import org.springframework.http.MediaType;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -47,6 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 
 @WebMvcTest(AuthController.class)
 @Import(AuthControllerTest.SecurityArgumentResolverConfig.class)
@@ -68,6 +72,9 @@ class AuthControllerTest {
 
   @Autowired
   private MockMvc mockMvc;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @MockitoBean
   private AuthService authService;
@@ -276,6 +283,61 @@ class AuthControllerTest {
           .andExpect(status().isForbidden());
 
       verify(refreshTokenCookieProvider, never()).attach(any(), any());
+    }
+  }
+
+  @Nested
+  @DisplayName("임시 비밀번호 발급")
+  class ResetPassword {
+
+    @Test
+    @DisplayName("유효한 이메일로 요청하면 200을 반환하고 서비스에 위임한다")
+    void resetPassword_validEmail_returns200() throws Exception {
+      // given
+      ResetPasswordRequest request = new ResetPasswordRequest("hong@test.com");
+
+      // when & then
+      mockMvc.perform(post("/api/auth/reset-password")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk());
+
+      verify(authService).resetPassword(request);
+    }
+
+    @Test
+    @DisplayName("이메일이 비어있으면 400을 반환하고 서비스는 호출하지 않는다")
+    void resetPassword_blankEmail_returns400() throws Exception {
+      ResetPasswordRequest request = new ResetPasswordRequest("");
+
+      mockMvc.perform(post("/api/auth/reset-password")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+
+      verify(authService, never()).resetPassword(any());
+    }
+
+    @Test
+    @DisplayName("이메일 형식이 올바르지 않으면 400을 반환한다")
+    void resetPassword_invalidEmailFormat_returns400() throws Exception {
+      ResetPasswordRequest request = new ResetPasswordRequest("not-an-email");
+
+      mockMvc.perform(post("/api/auth/reset-password")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("이메일이 50자를 초과하면 400을 반환한다")
+    void resetPassword_emailTooLong_returns400() throws Exception {
+      ResetPasswordRequest request = new ResetPasswordRequest("a".repeat(45) + "@test.com");
+
+      mockMvc.perform(post("/api/auth/reset-password")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
     }
   }
 }
