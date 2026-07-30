@@ -18,6 +18,7 @@ import com.sprint.mission.otboo.domain.social.follow.dto.FollowCreateRequest;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowDto;
 import com.sprint.mission.otboo.domain.social.follow.entity.Follow;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowForbiddenException;
+import com.sprint.mission.otboo.domain.social.follow.exception.FollowNotFoundException;
 import com.sprint.mission.otboo.domain.social.follow.exception.SelfFollowNotAllowedException;
 import com.sprint.mission.otboo.domain.social.follow.mapper.FollowMapper;
 import com.sprint.mission.otboo.domain.social.follow.repository.FollowRepository;
@@ -303,6 +304,24 @@ class FollowServiceTest {
       // when & then
       assertThatThrownBy(() -> followService.create(request, followerId))
           .isInstanceOf(UserNotFoundException.class);
+    }
+  }
+
+  @Nested
+  @DisplayName("팔로우 취소")
+  class DeleteFollow {
+
+    @Test
+    @DisplayName("존재하지 않는 followId면 FollowNotFoundException을 던진다")
+    void 존재하지_않는_followId면_FollowNotFoundException을_던진다() {
+      // given
+      UUID followId = UUID.randomUUID();
+      UUID currentUserId = UUID.randomUUID();
+      given(followRepository.findById(followId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> followService.delete(followId, currentUserId))
+          .isInstanceOf(FollowNotFoundException.class);
     }
   }
 }

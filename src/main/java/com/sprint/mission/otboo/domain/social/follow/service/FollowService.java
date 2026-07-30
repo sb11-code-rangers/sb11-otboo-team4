@@ -49,11 +49,6 @@ public class FollowService {
     return followMapper.toDto(follow, follower, followee);
   }
 
-  private void validateCreateRequest(UUID followerId, UUID followeeId, UUID currentUserId) {
-    validateFollowerMatchesCurrentUser(followerId, currentUserId);
-    validateNotSelfFollow(followerId, followeeId);
-  }
-
   private Follow findOrCreateFollow(UUID followerId, UUID followeeId, String followerName) {
     if (followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId)) {
       return findExistingFollow(followerId, followeeId);
@@ -72,6 +67,15 @@ public class FollowService {
       }
       throw e; // UQ 외 제약 위반은 전파
     }
+  }
+
+  @Transactional
+  public void delete(UUID followId, UUID currentUserId) {
+  }
+
+  private void validateCreateRequest(UUID followerId, UUID followeeId, UUID currentUserId) {
+    validateFollowerMatchesCurrentUser(followerId, currentUserId);
+    validateNotSelfFollow(followerId, followeeId);
   }
 
   private void publishFollowNotification(UUID followeeId, String followerName) {
