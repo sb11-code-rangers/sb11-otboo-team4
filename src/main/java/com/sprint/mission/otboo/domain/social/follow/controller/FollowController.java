@@ -42,6 +42,8 @@ public class FollowController implements FollowApi {
   public ResponseEntity<Void> cancelFollow(
       @PathVariable UUID followId,
       @CurrentUser UserPrincipal principal) {
-    return null;
+    log.debug("팔로우 취소 요청: followId={}, userId={}", followId, principal.userId());
+    followService.delete(followId, principal.userId());
+    return ResponseEntity.noContent().build();
   }
 }
