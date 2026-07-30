@@ -79,7 +79,7 @@ class GoogleSmtpMailServiceTest {
 
       // then
       ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
-      verify(mockTemplateEngine).process(eq("template/mail/temporary-password"),
+      verify(mockTemplateEngine).process(eq("templates/mail/temporary-password"),
           contextCaptor.capture());
       Context usedContext = contextCaptor.getValue();
       assertThat(usedContext.getVariable("temporaryPassword")).isEqualTo("raw-temp-password");
