@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.global.config.JpaConfig;
 import com.sprint.mission.otboo.global.config.QuerydslConfig;
-import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
@@ -136,7 +136,7 @@ class UserRepositoryTest {
       testEntityManager.flush();
       testEntityManager.clear();
 
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           null, null, 2, "email", SortDirection.ASCENDING, null, null, null);
 
       // when
@@ -158,7 +158,7 @@ class UserRepositoryTest {
       testEntityManager.flush();
       testEntityManager.clear();
 
-      UserSearchCondition firstPage = new UserSearchCondition(
+      UserListParams firstPage = new UserListParams(
           null, null, 1, "email", SortDirection.ASCENDING, null, null, null);
 
       // when
@@ -170,7 +170,7 @@ class UserRepositoryTest {
       assertThat(first.nextCursor()).isEqualTo("a@test.com");
 
       // when
-      UserSearchCondition secondPage = new UserSearchCondition(
+      UserListParams secondPage = new UserListParams(
           first.nextCursor(), first.nextIdAfter(), 2, "email", SortDirection.ASCENDING, null, null,
           null);
       CursorPageResponse<UserDto> second = userRepository.search(secondPage);
@@ -190,7 +190,7 @@ class UserRepositoryTest {
       testEntityManager.flush();
       testEntityManager.clear();
 
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           null, null, 10, "email", SortDirection.ASCENDING, "hong", null, null);
 
       // when
@@ -209,7 +209,7 @@ class UserRepositoryTest {
       testEntityManager.flush();
       testEntityManager.clear();
 
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           null, null, 10, "email", SortDirection.ASCENDING, null, Role.ADMIN, null);
 
       // when
@@ -230,7 +230,7 @@ class UserRepositoryTest {
       testEntityManager.flush();
       testEntityManager.clear();
 
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           null, null, 10, "email", SortDirection.ASCENDING, null, null, true);
 
       // when
@@ -250,7 +250,7 @@ class UserRepositoryTest {
       testEntityManager.flush();
       testEntityManager.clear();
 
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           null, null, 10, "email", SortDirection.DESCENDING, null, null, null);
 
       // when
@@ -274,7 +274,7 @@ class UserRepositoryTest {
       setCreatedAt(b.getId(), sameTime);
       testEntityManager.clear();
 
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           null, null, 10, "createdAt", SortDirection.ASCENDING, null, null, null);
 
       // when
@@ -290,7 +290,7 @@ class UserRepositoryTest {
     @DisplayName("createdAt 정렬에서 cursor가 Instant로 파싱할 수 없으면 InvalidCursorException을 던진다")
     void search_invalidCursorForCreatedAtSort_throwsInvalidCursorException() {
       // given
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           "not-an-instant", UUID.randomUUID(), 10, "createdAt", SortDirection.ASCENDING, null, null,
           null);
 

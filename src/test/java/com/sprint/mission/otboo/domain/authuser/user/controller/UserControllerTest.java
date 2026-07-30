@@ -4,7 +4,7 @@ import com.navercorp.fixturemonkey.FixtureMonkey;
 import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
 import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
-import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
@@ -172,7 +172,7 @@ class UserControllerTest {
       CursorPageResponse<UserDto> response = new CursorPageResponse<>(
           List.of(userDto), "hong@test.com", userDto.id(), false, 1L, "email",
           SortDirection.ASCENDING);
-      given(userService.getUsers(any(UserSearchCondition.class))).willReturn(response);
+      given(userService.getUsers(any(UserListParams.class))).willReturn(response);
 
       // when & then
       mockMvc.perform(get("/api/users"))
@@ -188,7 +188,7 @@ class UserControllerTest {
       // given
       CursorPageResponse<UserDto> response = new CursorPageResponse<>(
           List.of(), null, null, false, 0L, "createdAt", SortDirection.DESCENDING);
-      given(userService.getUsers(any(UserSearchCondition.class))).willReturn(response);
+      given(userService.getUsers(any(UserListParams.class))).willReturn(response);
 
       // when
       mockMvc.perform(get("/api/users")
@@ -201,10 +201,10 @@ class UserControllerTest {
           .andExpect(status().isOk());
 
       // then
-      ArgumentCaptor<UserSearchCondition> captor = ArgumentCaptor.forClass(
-          UserSearchCondition.class);
+      ArgumentCaptor<UserListParams> captor = ArgumentCaptor.forClass(
+          UserListParams.class);
       verify(userService).getUsers(captor.capture());
-      UserSearchCondition captured = captor.getValue();
+      UserListParams captured = captor.getValue();
       assertThat(captured.emailLike()).isEqualTo("hong");
       assertThat(captured.roleEqual()).isEqualTo(Role.ADMIN);
       assertThat(captured.locked()).isTrue();

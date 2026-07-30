@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
-public record UserSearchCondition(
+public record UserListParams(
     String cursor,
 
     UUID idAfter,
@@ -39,7 +39,7 @@ public record UserSearchCondition(
   private static final String DEFAULT_SORT_BY = "email";
   private static final SortDirection DEFAULT_SORT_DIRECTION = SortDirection.ASCENDING;
 
-  public UserSearchCondition {
+  public UserListParams {
     if (limit == null || limit <= 0) {
       limit = DEFAULT_LIMIT;
     }

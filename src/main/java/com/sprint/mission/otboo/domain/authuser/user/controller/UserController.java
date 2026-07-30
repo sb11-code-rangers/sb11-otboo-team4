@@ -2,7 +2,7 @@ package com.sprint.mission.otboo.domain.authuser.user.controller;
 
 import com.sprint.mission.otboo.domain.authuser.user.controller.api.UserApi;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
-import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.service.UserService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
@@ -27,7 +27,7 @@ public class UserController implements UserApi {
   @Override
   @GetMapping("")
   public ResponseEntity<CursorPageResponse<UserDto>> getUsers(
-      @Valid @ModelAttribute UserSearchCondition condition) {
+      @Valid @ModelAttribute UserListParams condition) {
     return ResponseEntity
         .status(HttpStatus.OK)
         .body(userService.getUsers(condition));

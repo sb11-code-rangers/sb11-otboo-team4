@@ -1,7 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.user.service;
 
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
-import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
@@ -26,7 +26,7 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
 
-  public CursorPageResponse<UserDto> getUsers(UserSearchCondition condition) {
+  public CursorPageResponse<UserDto> getUsers(UserListParams condition) {
     return userRepository.search(condition);
   }
 

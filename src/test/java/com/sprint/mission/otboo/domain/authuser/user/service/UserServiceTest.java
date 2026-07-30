@@ -4,7 +4,7 @@ import com.navercorp.fixturemonkey.FixtureMonkey;
 import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
 import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
-import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
@@ -233,7 +233,7 @@ class UserServiceTest {
     @DisplayName("조건을 그대로 리포지토리에 위임하고 결과를 그대로 반환한다")
     void getUsers_delegatesToRepositoryAndReturnsResult() {
       // given
-      UserSearchCondition condition = new UserSearchCondition(
+      UserListParams condition = new UserListParams(
           null, null, 10, "email", SortDirection.ASCENDING, null, null, null);
       CursorPageResponse<UserDto> response = new CursorPageResponse<>(
           List.of(), null, null, false, 0L, "email", SortDirection.ASCENDING);

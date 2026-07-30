@@ -6,15 +6,13 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
-import com.sprint.mission.otboo.domain.authuser.user.exception.InvalidCursorException;
-import com.sprint.mission.otboo.domain.authuser.user.repository.querydsl.UserRepositoryCustom;
+import com.sprint.mission.otboo.domain.authuser.user.repository.querydsl.UserCustomRepository;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,12 +20,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 
 @RequiredArgsConstructor
-public class UserRepositoryImpl implements UserRepositoryCustom {
+public class UserCustomRepositoryImpl implements UserCustomRepository {
 
   private final JPAQueryFactory queryFactory;
 
   @Override
-  public CursorPageResponse<UserDto> search(UserSearchCondition condition) {
+  public CursorPageResponse<UserDto> search(UserListParams condition) {
     List<UserDto> content = queryFactory
         .select(
             Projections.constructor(UserDto.class,
@@ -51,14 +49,15 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
         .fetch();
 
     boolean hasNext = content.size() > condition.limit();
-    if (hasNext) {
-      content = content.subList(0, condition.limit());
-    }
+    List<UserDto> data = hasNext ? content.subList(0, condition.limit()) : content;
 
-    UserDto last = content.isEmpty() ? null : content.get(content.size() - 1);
-    String nextCursor = last == null ? null
-        : ("email".equals(condition.sortBy()) ? last.email() : last.createdAt().toString());
-    UUID nextIdAfter = last == null ? null : last.id();
+    String nextCursor = null;
+    UUID nextIdAfter = null;
+    if (hasNext && !data.isEmpty()) {
+      UserDto last = data.get(data.size() - 1);
+      nextCursor = extractCursor(last, condition.sortBy());
+      nextIdAfter = last.id();
+    }
 
     // TODO: 매 페이지 요청 카운트 쿼리 최적화 (성능 측정 Phase에서 진행)
     Long totalCount = Optional.ofNullable(
@@ -74,7 +73,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
     ).orElse(0L);
 
     return new CursorPageResponse<>(
-        content,
+        data,
         nextCursor,
         nextIdAfter,
         hasNext,
@@ -82,6 +81,10 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
         condition.sortBy(),
         condition.sortDirection()
     );
+  }
+
+  private String extractCursor(UserDto last, String sortBy) {
+    return "email".equals(sortBy) ? last.email() : last.createdAt().toString();
   }
 
   private BooleanExpression emailLikeCondition(String emailLike) {
@@ -96,7 +99,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
     return locked != null ? user.locked.eq(locked) : null;
   }
 
-  private BooleanExpression cursorCondition(UserSearchCondition condition) {
+  private BooleanExpression cursorCondition(UserListParams condition) {
 
     if (!StringUtils.hasText(condition.cursor()) || condition.idAfter() == null) {
       // 첫 페이지 요청이라고 생각
@@ -119,12 +122,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
 
     } else {
 
-      Instant cursorInstant;
-      try {
-        cursorInstant = Instant.parse(condition.cursor());
-      } catch (DateTimeParseException e) {
-        throw InvalidCursorException.withCursor(condition.cursor());
-      }
+      Instant cursorInstant = Instant.parse(condition.cursor());
 
       if (ascending) {
         // 오름차순
@@ -137,7 +135,7 @@ public class UserRepositoryImpl implements UserRepositoryCustom {
     }
   }
 
-  private OrderSpecifier<?>[] orderSpecifiers(UserSearchCondition condition) {
+  private OrderSpecifier<?>[] orderSpecifiers(UserListParams condition) {
 
     String sortBy = condition.sortBy();
     boolean ascending = condition.sortDirection() == SortDirection.ASCENDING;

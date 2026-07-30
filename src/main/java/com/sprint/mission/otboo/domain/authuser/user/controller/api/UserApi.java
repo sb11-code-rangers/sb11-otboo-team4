@@ -1,7 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.user.controller.api;
 
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
-import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,5 +26,5 @@ public interface UserApi {
       @ApiResponse(responseCode = "200", description = "계정 목록 조회 성공"),
       @ApiResponse(responseCode = "400", description = "요청 값 유효성 검증 실패 또는 잘못된 cursor 값")
   })
-  ResponseEntity<CursorPageResponse<UserDto>> getUsers(UserSearchCondition condition);
+  ResponseEntity<CursorPageResponse<UserDto>> getUsers(UserListParams condition);
 }
