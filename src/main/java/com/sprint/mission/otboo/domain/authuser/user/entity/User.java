@@ -25,32 +25,32 @@ public class User {
   @Column(name = "id", nullable = false, updatable = false)
   private UUID id;
 
-  @Column(name = "name", nullable = false)
+  @Column(nullable = false)
   private String name;
 
-  @Column(name = "email", nullable = false, unique = true)
+  @Column(nullable = false, unique = true)
   private String email;
 
-  @Column(name = "password", nullable = false)
+  @Column(nullable = false)
   private String password;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "role", nullable = false)
+  @Column(nullable = false)
   private Role role;
 
-  @Column(name = "is_locked", nullable = false)
+  @Column(nullable = false)
   private boolean locked;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "lock_reason", nullable = false)
+  @Column(nullable = false)
   private LockReason lockReason;
 
   @CreatedDate
-  @Column(name = "created_at", nullable = false, updatable = false)
+  @Column(nullable = false, updatable = false)
   private Instant createdAt;
 
   @LastModifiedDate
-  @Column(name = "updated_at", nullable = false)
+  @Column(nullable = false)
   private Instant updatedAt;
 
   private User(String name, String email, String password, Role role, boolean locked,
@@ -69,6 +69,18 @@ public class User {
 
   public static User createAdmin(String name, String email, String encodedPassword) {
     return new User(name, email, encodedPassword, Role.ADMIN, false, LockReason.NONE);
+  }
+
+  public void changePassword(String newEncodedPassword) {
+    this.password = newEncodedPassword;
+  }
+
+  public void changeName(String newName) {
+    this.name = newName;
+  }
+
+  public void changeRole(Role newRole) {
+    this.role = newRole;
   }
 
   public void lock(LockReason lockReason) {

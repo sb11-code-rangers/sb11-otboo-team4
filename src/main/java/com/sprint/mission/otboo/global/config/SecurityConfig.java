@@ -1,5 +1,6 @@
 package com.sprint.mission.otboo.global.config;
 
+import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import com.sprint.mission.otboo.global.exception.ErrorResponseWriter;
 import com.sprint.mission.otboo.global.security.details.CustomUserDetailsService;
@@ -92,6 +93,10 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/auth/csrf-token").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
+        .requestMatchers(HttpMethod.PATCH, "/api/users/{userId}/role")
+        .hasAuthority(Role.ADMIN.name())
+        .requestMatchers(HttpMethod.PATCH, "/api/users/{userId}/lock")
+        .hasAuthority(Role.ADMIN.name())
 
         .anyRequest().authenticated()
     );

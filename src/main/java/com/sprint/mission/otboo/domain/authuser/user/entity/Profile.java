@@ -30,7 +30,7 @@ public class Profile {
 
   @MapsId
   @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
+  @JoinColumn(name = "user_id", nullable = false, updatable = false, foreignKey = @ForeignKey(name = "fk_profiles_user_id"))
   private User user;
 
   @Enumerated(EnumType.STRING)
@@ -38,19 +38,8 @@ public class Profile {
 
   private LocalDate birthDate;
 
-  private Double latitude;
-
-  private Double longitude;
-
-  @Column(name = "location_x")
-  private Integer locationX;
-
-  @Column(name = "location_y")
-  private Integer locationY;
-
-  @JdbcTypeCode(SqlTypes.JSON)
-  @Column(columnDefinition = "jsonb")
-  private List<String> locationNames;
+  @Embedded
+  private Location location;
 
   @Column(nullable = false)
   private int temperatureSensitivity;
@@ -58,11 +47,11 @@ public class Profile {
   private String profileImageUrl;
 
   @CreatedDate
-  @Column(name = "created_at", nullable = false, updatable = false)
+  @Column(nullable = false, updatable = false)
   private Instant createdAt;
 
   @LastModifiedDate
-  @Column(name = "updated_at", nullable = false)
+  @Column(nullable = false)
   private Instant updatedAt;
 
   private Profile(User user, int temperatureSensitivity) {
@@ -72,5 +61,36 @@ public class Profile {
 
   public static Profile createDefault(User user) {
     return new Profile(user, DEFAULT_TEMPERATURE_SENSITIVITY);
+  }
+
+  public void changeFields(String newName, Gender newGender, LocalDate newBirthDate,
+      Location newLocation, int newTemperatureSensitivity) {
+    changeName(newName);
+    changeGender(newGender);
+    changeBirthDate(newBirthDate);
+    if (newLocation != null) {
+      changeLocation(newLocation);
+    }
+    changeTemperatureSensitivity(newTemperatureSensitivity);
+  }
+
+  public void changeName(String newName) {
+    this.user.changeName(newName);
+  }
+
+  public void changeGender(Gender newGender) {
+    this.gender = newGender;
+  }
+
+  public void changeBirthDate(LocalDate newBirthDate) {
+    this.birthDate = newBirthDate;
+  }
+
+  public void changeLocation(Location newLocation) {
+    this.location = newLocation;
+  }
+
+  public void changeTemperatureSensitivity(int newTemperatureSensitivity) {
+    this.temperatureSensitivity = newTemperatureSensitivity;
   }
 }
