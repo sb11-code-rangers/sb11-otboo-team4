@@ -57,7 +57,7 @@ public class SecurityConfig {
 
     http.formLogin(AbstractHttpConfigurer::disable);
     http.httpBasic(AbstractHttpConfigurer::disable);
-    
+
     http.csrf(csrf -> csrf
         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
@@ -90,6 +90,7 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.POST, "/api/auth/sign-in").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/auth/csrf-token").permitAll()
 
         .anyRequest().authenticated()
     );

@@ -26,7 +26,7 @@ public class GoogleSmtpMailService implements MailService {
       Context context = new Context();
       context.setVariable("temporaryPassword", rawTempPassword);
       context.setVariable("expireMinutes", 3);
-      String html = templateEngine.process("templates/mail/temporary-password", context);
+      String html = templateEngine.process("mail/temporary-password", context);
 
       MimeMessage message = mailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
