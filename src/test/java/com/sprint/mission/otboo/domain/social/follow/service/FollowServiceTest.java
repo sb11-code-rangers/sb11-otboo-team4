@@ -338,5 +338,22 @@ class FollowServiceTest {
       assertThatThrownBy(() -> followService.delete(followId, currentUserId))
           .isInstanceOf(FollowForbiddenException.class);
     }
+
+    @Test
+    @DisplayName("본인의 팔로우면 하드 삭제한다")
+    void 본인의_팔로우면_하드_삭제한다() {
+      // given
+      UUID followId = UUID.randomUUID();
+      UUID currentUserId = UUID.randomUUID();
+      Follow follow = Follow.create(currentUserId,
+          UUID.randomUUID());
+      given(followRepository.findById(followId)).willReturn(Optional.of(follow));
+
+      // when
+      followService.delete(followId, currentUserId);
+
+      // then
+      verify(followRepository).delete(follow);
+    }
   }
 }
