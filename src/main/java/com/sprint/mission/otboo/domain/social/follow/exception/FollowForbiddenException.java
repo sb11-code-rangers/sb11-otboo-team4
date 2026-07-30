@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.social.follow.exception;
 
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 
 public class FollowForbiddenException extends FollowException {
@@ -10,6 +11,10 @@ public class FollowForbiddenException extends FollowException {
   }
 
   public static FollowForbiddenException followerMismatch() {
+    return new FollowForbiddenException();
+  }
+
+  public static FollowForbiddenException notOwner(UUID followId) {
     return new FollowForbiddenException();
   }
 }

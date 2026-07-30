@@ -323,5 +323,20 @@ class FollowServiceTest {
       assertThatThrownBy(() -> followService.delete(followId, currentUserId))
           .isInstanceOf(FollowNotFoundException.class);
     }
+
+    @Test
+    @DisplayName("본인의 팔로우가 아니면 FollowForbiddenException을 던진다")
+    void 본인의_팔로우가_아니면_FollowForbiddenException을_던진다() {
+      // given
+      UUID followId = UUID.randomUUID();
+      UUID currentUserId = UUID.randomUUID();
+      UUID otherFollowerId = UUID.randomUUID(); // 남의 팔로우
+      Follow follow = Follow.create(otherFollowerId, UUID.randomUUID());
+      given(followRepository.findById(followId)).willReturn(Optional.of(follow));
+
+      // when & then
+      assertThatThrownBy(() -> followService.delete(followId, currentUserId))
+          .isInstanceOf(FollowForbiddenException.class);
+    }
   }
 }
