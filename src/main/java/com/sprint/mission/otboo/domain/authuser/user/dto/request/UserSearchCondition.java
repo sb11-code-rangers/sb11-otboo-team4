@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
 
 public record UserSearchCondition(
@@ -17,6 +19,7 @@ public record UserSearchCondition(
     UUID idAfter,
 
     @Min(value = 1, message = "limit은 1 이상이어야 합니다.")
+    @Max(value = 100, message = "limit은 100을 넘을 수 없습니다.")
     Integer limit,
 
     @Pattern(regexp = "^(email|createdAt)$", message = "sortBy는 email 또는 createdAt만 가능합니다.")
@@ -48,8 +51,21 @@ public record UserSearchCondition(
     }
   }
 
-  @AssertTrue(message = "cursor, idAfter는 함께 전달되어야 합니다")
-  public boolean isCursorAndIdAfterConsistent() {
-    return (cursor == null && idAfter == null) || (cursor != null && idAfter != null);
+  @AssertTrue(message = "cursor와 idAfter는 함께 제공되거나 함께 생략되어야 합니다.")
+  public boolean isCursorPairValid() {
+    return (cursor == null) == (idAfter == null);
+  }
+
+  @AssertTrue(message = "createdAt 기준 커서는 Instant로 파싱 가능한 값이어야 합니다.")
+  public boolean isCursorFormatValidForSortBy() {
+    if (cursor == null || !"createdAt".equals(sortBy)) {
+      return true;
+    }
+    try {
+      Instant.parse(cursor);
+      return true;
+    } catch (DateTimeParseException e) {
+      return false;
+    }
   }
 }
