@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.csrf.CsrfToken;
 
 @Tag(name = "인증", description = "인증 관련 API")
 public interface AuthApi {
@@ -47,4 +48,10 @@ public interface AuthApi {
       @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
   })
   ResponseEntity<JwtDto> refresh(String refreshToken, HttpServletResponse response);
+
+  @Operation(summary = "CSRF 토큰 발급", description = "CSRF 토큰을 발급해 쿠키(XSRF-TOKEN)에 저장합니다. 이후 상태를 변경하는 요청에는 이 쿠키 값을 X-XSRF-TOKEN 헤더에 담아 함께 보내야 합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "CSRF 토큰 발급 성공")
+  })
+  ResponseEntity<Void> csrfToken(CsrfToken csrfToken);
 }
