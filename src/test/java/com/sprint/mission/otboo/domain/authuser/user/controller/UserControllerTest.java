@@ -1,43 +1,80 @@
 package com.sprint.mission.otboo.domain.authuser.user.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.navercorp.fixturemonkey.FixtureMonkey;
 import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
 import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.ChangePasswordRequest;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.ProfileUpdateRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserLockUpdateRequest;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserRoleUpdateRequest;
+import com.sprint.mission.otboo.domain.authuser.user.dto.response.ProfileDto;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
+import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Gender;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
 import com.sprint.mission.otboo.domain.authuser.user.service.UserService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
+import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.Instant;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-
 @WebMvcTest(UserController.class)
+@Import(UserControllerTest.SecurityArgumentResolverConfig.class)
 class UserControllerTest {
+
+  @TestConfiguration
+  static class SecurityArgumentResolverConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+      resolvers.add(new AuthenticationPrincipalArgumentResolver());
+    }
+  }
+
+  private UsernamePasswordAuthenticationToken authenticationOf(UUID userId) {
+    UserPrincipal principal = new UserPrincipal(userId, Role.USER.name());
+    return new UsernamePasswordAuthenticationToken(principal, null,
+        List.of(new SimpleGrantedAuthority(Role.USER.name())));
+  }
 
   private static final FixtureMonkey fixtureMonkey = FixtureMonkey.builder()
       .objectIntrospector(ConstructorPropertiesArbitraryIntrospector.INSTANCE)
@@ -213,4 +250,223 @@ class UserControllerTest {
       assertThat(captured.limit()).isEqualTo(20);
     }
   }
+
+  @Nested
+  @DisplayName("권한 수정")
+  class ChangeRole {
+
+    @Test
+    @DisplayName("유효한 요청이면 200과 변경된 UserDto를 반환한다")
+    void changeRole_validRequest_returns200() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserDto responseDto =
+          new UserDto(userId, Instant.now(), "hong@test.com", "홍길동", Role.ADMIN, false);
+      given(userService.changeRole(eq(userId), any(UserRoleUpdateRequest.class)))
+          .willReturn(responseDto);
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}/role", userId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(new UserRoleUpdateRequest(Role.ADMIN))))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.role").value("ADMIN"));
+    }
+
+    @Test
+    @DisplayName("role이 없으면 400을 반환한다")
+    void changeRole_missingRole_returns400() throws Exception {
+      mockMvc.perform(patch("/api/users/{userId}/role", UUID.randomUUID())
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{}"))
+          .andExpect(status().isBadRequest());
+
+      verify(userService, never()).changeRole(any(), any());
+    }
+  }
+
+  @Nested
+  @DisplayName("프로필 조회")
+  class GetProfile {
+
+    @AfterEach
+    void tearDown() {
+      SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    @DisplayName("본인 프로필을 조회하면 200과 ProfileDto를 반환한다")
+    void getProfile_self_returns200() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
+      ProfileDto responseDto =
+          new ProfileDto(userId, "홍길동", Gender.MALE, LocalDate.of(1995, 1, 1), null, 3, null);
+      given(userService.getProfile(userId)).willReturn(responseDto);
+
+      // when & then
+      mockMvc.perform(get("/api/users/{userId}/profiles", userId))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.name").value("홍길동"));
+    }
+
+    @Test
+    @DisplayName("본인이 아닌 사용자의 프로필을 조회하면 403을 반환한다")
+    void getProfile_notSelf_returns403() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(UUID.randomUUID()));
+
+      // when & then
+      mockMvc.perform(get("/api/users/{userId}/profiles", userId))
+          .andExpect(status().isForbidden());
+
+      verify(userService, never()).getProfile(any());
+    }
+  }
+
+  @Nested
+  @DisplayName("프로필 수정")
+  class ChangeProfile {
+
+    @AfterEach
+    void tearDown() {
+      SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    @DisplayName("본인 프로필을 수정하면 200과 변경된 ProfileDto를 반환한다")
+    void changeProfile_self_returns200() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
+      ProfileUpdateRequest request = new ProfileUpdateRequest(
+          "김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 4);
+      ProfileDto responseDto =
+          new ProfileDto(userId, "김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 4, null);
+      given(userService.changeProfile(eq(userId), any(ProfileUpdateRequest.class), any()))
+          .willReturn(responseDto);
+
+      MockMultipartFile requestPart = new MockMultipartFile(
+          "request", "", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(request));
+
+      // when & then
+      mockMvc.perform(multipart(HttpMethod.PATCH, "/api/users/{userId}/profiles", userId)
+              .file(requestPart))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.name").value("김철수"));
+    }
+
+    @Test
+    @DisplayName("본인이 아닌 사용자의 프로필을 수정하려 하면 403을 반환한다")
+    void changeProfile_notSelf_returns403() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(UUID.randomUUID()));
+      ProfileUpdateRequest request = new ProfileUpdateRequest(
+          "김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 4);
+      MockMultipartFile requestPart = new MockMultipartFile(
+          "request", "", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(request));
+
+      // when & then
+      mockMvc.perform(multipart(HttpMethod.PATCH, "/api/users/{userId}/profiles", userId)
+              .file(requestPart))
+          .andExpect(status().isForbidden());
+
+      verify(userService, never()).changeProfile(any(), any(), any());
+    }
+  }
+
+  @Nested
+  @DisplayName("비밀번호 변경")
+  class ChangePassword {
+
+    @AfterEach
+    void tearDown() {
+      SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    @DisplayName("본인 비밀번호를 변경하면 200을 반환한다")
+    void changePassword_self_returns200() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
+      UserDto responseDto =
+          new UserDto(userId, Instant.now(), "hong@test.com", "홍길동", Role.USER, false);
+      given(userService.changePassword(eq(userId), any(ChangePasswordRequest.class)))
+          .willReturn(responseDto);
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}/password", userId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(new ChangePasswordRequest("newpass1"))))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("본인이 아닌 사용자의 비밀번호를 변경하려 하면 403을 반환한다")
+    void changePassword_notSelf_returns403() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(UUID.randomUUID()));
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}/password", userId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(new ChangePasswordRequest("newpass1"))))
+          .andExpect(status().isForbidden());
+
+      verify(userService, never()).changePassword(any(), any());
+    }
+
+    @Test
+    @DisplayName("비밀번호가 6자 미만이면 400을 반환한다")
+    void changePassword_tooShort_returns400() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}/password", userId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(new ChangePasswordRequest("123"))))
+          .andExpect(status().isBadRequest());
+    }
+  }
+
+  @Nested
+  @DisplayName("계정 잠금 상태 변경")
+  class ChangeLocked {
+
+    @Test
+    @DisplayName("유효한 요청이면 200과 변경된 UserDto를 반환한다")
+    void changeLocked_validRequest_returns200() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserDto responseDto =
+          new UserDto(userId, Instant.now(), "hong@test.com", "홍길동", Role.USER, true);
+      given(userService.changeLocked(eq(userId), any(UserLockUpdateRequest.class)))
+          .willReturn(responseDto);
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}/lock", userId)
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(new UserLockUpdateRequest(true))))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.locked").value(true));
+    }
+
+    @Test
+    @DisplayName("locked 값이 없으면 400을 반환한다")
+    void changeLocked_missingLocked_returns400() throws Exception {
+      mockMvc.perform(patch("/api/users/{userId}/lock", UUID.randomUUID())
+              .contentType(MediaType.APPLICATION_JSON)
+              .content("{}"))
+          .andExpect(status().isBadRequest());
+
+      verify(userService, never()).changeLocked(any(), any());
+    }
+  }
+
 }
