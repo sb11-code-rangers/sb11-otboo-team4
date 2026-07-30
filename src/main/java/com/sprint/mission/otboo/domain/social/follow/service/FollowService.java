@@ -78,6 +78,10 @@ public class FollowService {
     if (!follow.getFollowerId().equals(currentUserId)) {
       throw FollowForbiddenException.notOwner(followId);
     }
+
+    followRepository.delete(follow);
+    log.info("팔로우 취소 완료: followId={}, followerId={}, followeeId={}",
+        followId, follow.getFollowerId(), follow.getFolloweeId());
   }
 
   private void validateCreateRequest(UUID followerId, UUID followeeId, UUID currentUserId) {
