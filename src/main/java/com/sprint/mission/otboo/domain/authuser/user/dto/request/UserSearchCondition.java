@@ -48,8 +48,8 @@ public record UserSearchCondition(
     }
   }
 
-  @AssertTrue(message = "cursor와 idAfter는 함께 제공되거나 함께 생략되어야 합니다.")
-  public boolean isCursorPairValid() {
-    return (cursor == null) == (idAfter == null);
+  @AssertTrue(message = "cursor, idAfter는 함께 전달되어야 합니다")
+  public boolean isCursorAndIdAfterConsistent() {
+    return (cursor == null && idAfter == null) || (cursor != null && idAfter != null);
   }
 }
