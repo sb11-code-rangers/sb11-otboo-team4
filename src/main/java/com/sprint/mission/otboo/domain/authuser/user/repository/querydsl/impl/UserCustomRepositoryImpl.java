@@ -101,8 +101,7 @@ public class UserCustomRepositoryImpl implements UserCustomRepository {
 
   private BooleanExpression cursorCondition(UserListParams condition) {
 
-    if (!StringUtils.hasText(condition.cursor()) || condition.idAfter() == null) {
-      // 첫 페이지 요청이라고 생각
+    if (condition.cursor() == null) {
       return null;
     }
 

@@ -10,9 +10,9 @@ import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserListParams;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
-import com.sprint.mission.otboo.domain.authuser.user.exception.InvalidCursorException;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
+import java.time.format.DateTimeParseException;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.Instant;
@@ -179,6 +179,8 @@ class UserRepositoryTest {
       assertThat(second.data()).extracting(UserDto::email)
           .containsExactly("b@test.com", "c@test.com");
       assertThat(second.hasNext()).isFalse();
+      assertThat(second.nextCursor()).isNull();
+      assertThat(second.nextIdAfter()).isNull();
     }
 
     @Test
@@ -287,8 +289,8 @@ class UserRepositoryTest {
     }
 
     @Test
-    @DisplayName("createdAt 정렬에서 cursor가 Instant로 파싱할 수 없으면 InvalidCursorException을 던진다")
-    void search_invalidCursorForCreatedAtSort_throwsInvalidCursorException() {
+    @DisplayName("createdAt 정렬에서 cursor가 Instant로 파싱할 수 없으면 예외가 전파된다 (정상 흐름에서는 @Valid가 먼저 막아줌)")
+    void search_invalidCursorForCreatedAtSort_propagatesDateTimeParseException() {
       // given
       UserListParams condition = new UserListParams(
           "not-an-instant", UUID.randomUUID(), 10, "createdAt", SortDirection.ASCENDING, null, null,
@@ -296,7 +298,7 @@ class UserRepositoryTest {
 
       // when & then
       assertThatThrownBy(() -> userRepository.search(condition))
-          .isInstanceOf(InvalidCursorException.class);
+          .isInstanceOf(DateTimeParseException.class);
     }
   }
 }
