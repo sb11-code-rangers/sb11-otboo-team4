@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.user.service;
 
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
@@ -8,6 +9,7 @@ import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailExc
 import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
+import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,10 @@ public class UserService {
   private final ProfileRepository profileRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
+
+  public CursorPageResponse<UserDto> getUsers(UserSearchCondition condition) {
+    return userRepository.search(condition);
+  }
 
   @Transactional
   public UserDto signUp(UserCreateRequest request) {

@@ -91,6 +91,7 @@ public class SecurityConfig {
         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
         .requestMatchers(HttpMethod.POST, "/api/auth/reset-password").permitAll()
         .requestMatchers(HttpMethod.GET, "/api/auth/csrf-token").permitAll()
+        .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
 
         .anyRequest().authenticated()
     );
