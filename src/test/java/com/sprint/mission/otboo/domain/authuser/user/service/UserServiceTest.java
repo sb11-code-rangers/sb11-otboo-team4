@@ -4,6 +4,7 @@ import com.navercorp.fixturemonkey.FixtureMonkey;
 import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
 import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
+import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserSearchCondition;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
@@ -12,6 +13,9 @@ import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailExc
 import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
+import com.sprint.mission.otboo.global.dto.CursorPageResponse;
+import com.sprint.mission.otboo.global.dto.SortDirection;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -218,6 +222,29 @@ class UserServiceTest {
           .isInstanceOf(RuntimeException.class);
 
       verify(mockProfileRepository, never()).save(any());
+    }
+  }
+
+  @Nested
+  @DisplayName("사용자 목록 조회")
+  class GetUsers {
+
+    @Test
+    @DisplayName("조건을 그대로 리포지토리에 위임하고 결과를 그대로 반환한다")
+    void getUsers_delegatesToRepositoryAndReturnsResult() {
+      // given
+      UserSearchCondition condition = new UserSearchCondition(
+          null, null, 10, "email", SortDirection.ASCENDING, null, null, null);
+      CursorPageResponse<UserDto> response = new CursorPageResponse<>(
+          List.of(), null, null, false, 0L, "email", SortDirection.ASCENDING);
+      given(mockUserRepository.search(condition)).willReturn(response);
+
+      // when
+      CursorPageResponse<UserDto> result = userService.getUsers(condition);
+
+      // then
+      assertThat(result).isEqualTo(response);
+      verify(mockUserRepository).search(condition);
     }
   }
 }
