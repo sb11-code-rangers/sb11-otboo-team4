@@ -7,10 +7,13 @@ import com.sprint.mission.otboo.domain.social.follow.service.FollowService;
 import com.sprint.mission.otboo.global.security.jwt.filter.CurrentUser;
 import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,5 +35,13 @@ public class FollowController implements FollowApi {
     log.debug("팔로우 생성 요청: userId={}", principal.userId());
     FollowDto created = followService.create(request, principal.userId());
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
+
+  @DeleteMapping("/{followId}")
+  @Override
+  public ResponseEntity<Void> cancelFollow(
+      @PathVariable UUID followId,
+      @CurrentUser UserPrincipal principal) {
+    return null;
   }
 }
