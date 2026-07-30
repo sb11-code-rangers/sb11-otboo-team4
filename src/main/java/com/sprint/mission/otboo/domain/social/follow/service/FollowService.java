@@ -74,6 +74,10 @@ public class FollowService {
   public void delete(UUID followId, UUID currentUserId) {
     Follow follow = followRepository.findById(followId)
         .orElseThrow(() -> FollowNotFoundException.of(followId));
+
+    if (!follow.getFollowerId().equals(currentUserId)) {
+      throw FollowForbiddenException.notOwner(followId);
+    }
   }
 
   private void validateCreateRequest(UUID followerId, UUID followeeId, UUID currentUserId) {

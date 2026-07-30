@@ -10,11 +10,15 @@ public class FollowForbiddenException extends FollowException {
     super(HttpStatus.FORBIDDEN, "본인만 수행할 수 있습니다.", Map.of());
   }
 
+  private FollowForbiddenException(Map<String, Object> details) {
+    super(HttpStatus.FORBIDDEN, "본인만 수행할 수 있습니다.", details);
+  }
+
   public static FollowForbiddenException followerMismatch() {
     return new FollowForbiddenException();
   }
 
   public static FollowForbiddenException notOwner(UUID followId) {
-    return new FollowForbiddenException();
+    return new FollowForbiddenException(Map.of("followId", followId));
   }
 }
