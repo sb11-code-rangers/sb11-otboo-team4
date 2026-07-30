@@ -1,13 +1,13 @@
 package com.sprint.mission.otboo.global.config;
 
-import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
+import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import com.sprint.mission.otboo.global.exception.ErrorResponseWriter;
 import com.sprint.mission.otboo.global.security.details.CustomUserDetailsService;
 import com.sprint.mission.otboo.global.security.jwt.JwtProvider;
 import com.sprint.mission.otboo.global.security.jwt.filter.JwtAuthenticationFilter;
-import com.sprint.mission.otboo.global.usersession.UserSession;
+import com.sprint.mission.otboo.global.temppassword.TempPasswordAuthenticationProvider;
+import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
 import com.sprint.mission.otboo.global.usersession.UserSessionRegistry;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,7 +19,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -32,12 +31,18 @@ public class SecurityConfig {
   @Bean
   public AuthenticationManager authenticationManager(
       CustomUserDetailsService userDetailsService,
-      PasswordEncoder passwordEncoder
+      PasswordEncoder passwordEncoder,
+      UserRepository userRepository,
+      TempPasswordRegistry tempPasswordRegistry
   ) {
 
-    DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
-    provider.setPasswordEncoder(passwordEncoder);
-    return new ProviderManager(provider);
+    DaoAuthenticationProvider daoProvider = new DaoAuthenticationProvider(userDetailsService);
+    daoProvider.setPasswordEncoder(passwordEncoder);
+
+    TempPasswordAuthenticationProvider tempPasswordAuthenticationProvider = new TempPasswordAuthenticationProvider(
+        userRepository, tempPasswordRegistry);
+
+    return new ProviderManager(daoProvider, tempPasswordAuthenticationProvider);
   }
 
   @Bean
