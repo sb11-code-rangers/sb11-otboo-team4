@@ -5,6 +5,7 @@ import com.sprint.mission.otboo.domain.authuser.auth.dto.request.SignInRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,5 +54,5 @@ public interface AuthApi {
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "CSRF 토큰 발급 성공")
   })
-  ResponseEntity<Void> csrfToken(CsrfToken csrfToken);
+  ResponseEntity<Void> csrfToken(@Parameter(hidden = true) CsrfToken csrfToken);
 }
