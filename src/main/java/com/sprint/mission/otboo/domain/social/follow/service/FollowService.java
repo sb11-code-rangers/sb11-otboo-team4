@@ -6,6 +6,7 @@ import com.sprint.mission.otboo.domain.social.follow.dto.FollowCreateRequest;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowDto;
 import com.sprint.mission.otboo.domain.social.follow.entity.Follow;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowForbiddenException;
+import com.sprint.mission.otboo.domain.social.follow.exception.FollowNotFoundException;
 import com.sprint.mission.otboo.domain.social.follow.exception.SelfFollowNotAllowedException;
 import com.sprint.mission.otboo.domain.social.follow.mapper.FollowMapper;
 import com.sprint.mission.otboo.domain.social.follow.repository.FollowRepository;
@@ -71,6 +72,8 @@ public class FollowService {
 
   @Transactional
   public void delete(UUID followId, UUID currentUserId) {
+    Follow follow = followRepository.findById(followId)
+        .orElseThrow(() -> FollowNotFoundException.of(followId));
   }
 
   private void validateCreateRequest(UUID followerId, UUID followeeId, UUID currentUserId) {
