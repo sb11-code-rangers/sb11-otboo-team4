@@ -7,20 +7,15 @@ ALTER TABLE locations RENAME TO weather_grids;
 ALTER TABLE weather_grids RENAME CONSTRAINT PK_LOCATIONS TO PK_WEATHER_GRIDS;
 DROP INDEX IDX_locations_x_y;
 ALTER TABLE weather_grids
-    ADD CONSTRAINT UQ_weather_grids_x_y UNIQUE (x, y) ,
-DROP
-COLUMN latitude,
-    DROP
-COLUMN longitude,
-    DROP
-COLUMN location_names,
-    DROP
-COLUMN updated_at;
+    ADD CONSTRAINT UQ_weather_grids_x_y UNIQUE (x, y),
+    DROP COLUMN latitude,
+    DROP COLUMN longitude,
+    DROP COLUMN location_names,
+    DROP COLUMN updated_at;
 
 ALTER TABLE weathers RENAME COLUMN location_id TO weather_grid_id;
 ALTER TABLE weathers RENAME CONSTRAINT FK_locations_TO_weathers_1 TO FK_weather_grids_TO_weathers_1;
-ALTER
-INDEX IDX_weathers_location_id RENAME TO IDX_weathers_weather_grid_id;
+ALTER INDEX IDX_weathers_location_id RENAME TO IDX_weathers_weather_grid_id;
 
 -- 응답용 행정구역명 캐시 (weather_grids와 분리, ~50m 단위 좌표 블록 기준)
 CREATE TABLE locations
