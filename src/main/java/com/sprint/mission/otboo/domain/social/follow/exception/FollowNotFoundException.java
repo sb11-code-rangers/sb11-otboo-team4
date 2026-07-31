@@ -6,8 +6,11 @@ import org.springframework.http.HttpStatus;
 
 public class FollowNotFoundException extends FollowException {
 
+  private static final HttpStatus STATUS = HttpStatus.NOT_FOUND;
+  private static final String MESSAGE = "팔로우를 찾을 수 없습니다.";
+
   private FollowNotFoundException(Map<String, Object> details) {
-    super(HttpStatus.NOT_FOUND, "팔로우를 찾을 수 없습니다.", details);
+    super(STATUS, MESSAGE, details);
   }
 
   public static FollowNotFoundException of(UUID followId) {

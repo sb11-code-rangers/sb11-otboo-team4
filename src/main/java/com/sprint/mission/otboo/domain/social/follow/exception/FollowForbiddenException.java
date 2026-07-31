@@ -6,12 +6,15 @@ import org.springframework.http.HttpStatus;
 
 public class FollowForbiddenException extends FollowException {
 
+  private static final HttpStatus STATUS = HttpStatus.FORBIDDEN;
+  private static final String MESSAGE = "본인만 수행할 수 있습니다.";
+
   private FollowForbiddenException() {
-    super(HttpStatus.FORBIDDEN, "본인만 수행할 수 있습니다.", Map.of());
+    super(STATUS, MESSAGE, Map.of());
   }
 
   private FollowForbiddenException(Map<String, Object> details) {
-    super(HttpStatus.FORBIDDEN, "본인만 수행할 수 있습니다.", details);
+    super(STATUS, MESSAGE, details);
   }
 
   public static FollowForbiddenException followerMismatch() {
