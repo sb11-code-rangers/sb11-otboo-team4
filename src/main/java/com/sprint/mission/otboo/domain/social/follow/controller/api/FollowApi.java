@@ -27,7 +27,9 @@ public interface FollowApi {
   @Operation(summary = "팔로우 취소", operationId = "cancelFollow")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "팔로우 취소 성공"),
-      @ApiResponse(responseCode = "400", description = "팔로우 취소 실패")
+      @ApiResponse(responseCode = "400", description = "팔로우 취소 실패"),
+      @ApiResponse(responseCode = "403", description = "본인만 수행할 수 있음"),
+      @ApiResponse(responseCode = "404", description = "팔로우를 찾을 수 없음")
   })
   ResponseEntity<Void> cancelFollow(UUID followId, UserPrincipal principal);
 }
