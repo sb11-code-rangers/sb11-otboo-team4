@@ -1,5 +1,6 @@
 package com.sprint.mission.otboo.domain.authuser.user.service;
 
+import com.sprint.mission.otboo.domain.authuser.auth.exception.AccessDeniedException;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.ChangePasswordRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.ProfileUpdateRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
@@ -79,14 +80,18 @@ public class UserService {
     return userMapper.userDtoFrom(foundUser);
   }
 
-  public ProfileDto getProfile(UUID userId) {
+  public ProfileDto getProfile(UUID userId, UUID requestUserId) {
+    checkSelf(userId, requestUserId);
     Profile foundProfile = profileRepository.findByIdWithUser(userId)
         .orElseThrow(UserNotFoundException::withNone);
     return userMapper.profileDtoFrom(foundProfile);
   }
 
   @Transactional
-  public ProfileDto changeProfile(UUID userId, ProfileUpdateRequest request, MultipartFile image) {
+  public ProfileDto changeProfile(UUID userId, UUID requestUserId, ProfileUpdateRequest request,
+      MultipartFile image) {
+    checkSelf(userId, requestUserId);
+
     Profile foundProfile = profileRepository.findByIdWithUser(userId)
         .orElseThrow(UserNotFoundException::withNone);
 
@@ -105,7 +110,9 @@ public class UserService {
   }
 
   @Transactional
-  public UserDto changePassword(UUID userId, ChangePasswordRequest request) {
+  public UserDto changePassword(UUID userId, UUID requestUserId, ChangePasswordRequest request) {
+    checkSelf(userId, requestUserId);
+
     User foundUser = userRepository.findById(userId)
         .orElseThrow(UserNotFoundException::withNone);
 
@@ -135,5 +142,11 @@ public class UserService {
     userSessionRegistry.revoke(userId);
 
     return userMapper.userDtoFrom(foundUser);
+  }
+
+  private void checkSelf(UUID userId, UUID requestUserId) {
+    if (!userId.equals(requestUserId)) {
+      throw AccessDeniedException.withNone();
+    }
   }
 }

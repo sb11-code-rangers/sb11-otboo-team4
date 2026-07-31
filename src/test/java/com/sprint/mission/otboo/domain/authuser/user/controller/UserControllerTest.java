@@ -13,6 +13,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprint.mission.otboo.domain.authuser.auth.exception.AccessDeniedException;
+
 import com.navercorp.fixturemonkey.FixtureMonkey;
 import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
 import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
@@ -302,7 +304,7 @@ class UserControllerTest {
       SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
       ProfileDto responseDto =
           new ProfileDto(userId, "홍길동", Gender.MALE, LocalDate.of(1995, 1, 1), null, 3, null);
-      given(userService.getProfile(userId)).willReturn(responseDto);
+      given(userService.getProfile(userId, userId)).willReturn(responseDto);
 
       // when & then
       mockMvc.perform(get("/api/users/{userId}/profiles", userId))
@@ -315,13 +317,14 @@ class UserControllerTest {
     void getProfile_notSelf_returns403() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
-      SecurityContextHolder.getContext().setAuthentication(authenticationOf(UUID.randomUUID()));
+      UUID principalId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(principalId));
+      given(userService.getProfile(userId, principalId)).willThrow(
+          AccessDeniedException.withNone());
 
       // when & then
       mockMvc.perform(get("/api/users/{userId}/profiles", userId))
           .andExpect(status().isForbidden());
-
-      verify(userService, never()).getProfile(any());
     }
   }
 
@@ -344,7 +347,8 @@ class UserControllerTest {
           "김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 4);
       ProfileDto responseDto =
           new ProfileDto(userId, "김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 4, null);
-      given(userService.changeProfile(eq(userId), any(ProfileUpdateRequest.class), any()))
+      given(
+          userService.changeProfile(eq(userId), eq(userId), any(ProfileUpdateRequest.class), any()))
           .willReturn(responseDto);
 
       MockMultipartFile requestPart = new MockMultipartFile(
@@ -362,18 +366,20 @@ class UserControllerTest {
     void changeProfile_notSelf_returns403() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
-      SecurityContextHolder.getContext().setAuthentication(authenticationOf(UUID.randomUUID()));
+      UUID principalId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(principalId));
       ProfileUpdateRequest request = new ProfileUpdateRequest(
           "김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 4);
       MockMultipartFile requestPart = new MockMultipartFile(
           "request", "", MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsBytes(request));
+      given(userService.changeProfile(
+          eq(userId), eq(principalId), any(ProfileUpdateRequest.class), any()))
+          .willThrow(AccessDeniedException.withNone());
 
       // when & then
       mockMvc.perform(multipart(HttpMethod.PATCH, "/api/users/{userId}/profiles", userId)
               .file(requestPart))
           .andExpect(status().isForbidden());
-
-      verify(userService, never()).changeProfile(any(), any(), any());
     }
   }
 
@@ -394,7 +400,7 @@ class UserControllerTest {
       SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
       UserDto responseDto =
           new UserDto(userId, Instant.now(), "hong@test.com", "홍길동", Role.USER, false);
-      given(userService.changePassword(eq(userId), any(ChangePasswordRequest.class)))
+      given(userService.changePassword(eq(userId), eq(userId), any(ChangePasswordRequest.class)))
           .willReturn(responseDto);
 
       // when & then
@@ -409,15 +415,17 @@ class UserControllerTest {
     void changePassword_notSelf_returns403() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
-      SecurityContextHolder.getContext().setAuthentication(authenticationOf(UUID.randomUUID()));
+      UUID principalId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(principalId));
+      given(
+          userService.changePassword(eq(userId), eq(principalId), any(ChangePasswordRequest.class)))
+          .willThrow(AccessDeniedException.withNone());
 
       // when & then
       mockMvc.perform(patch("/api/users/{userId}/password", userId)
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(new ChangePasswordRequest("newpass1"))))
           .andExpect(status().isForbidden());
-
-      verify(userService, never()).changePassword(any(), any());
     }
 
     @Test
@@ -434,6 +442,7 @@ class UserControllerTest {
           .andExpect(status().isBadRequest());
     }
   }
+
 
   @Nested
   @DisplayName("계정 잠금 상태 변경")

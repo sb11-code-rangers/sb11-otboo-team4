@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.sprint.mission.otboo.domain.authuser.auth.exception.AccessDeniedException;
 import com.navercorp.fixturemonkey.FixtureMonkey;
 import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
 import com.navercorp.fixturemonkey.api.introspector.FieldReflectionArbitraryIntrospector;
@@ -324,8 +325,8 @@ class UserServiceTest {
   class GetProfile {
 
     @Test
-    @DisplayName("존재하는 사용자의 프로필을 조회해 ProfileDto로 반환한다")
-    void getProfile_existingUser_returnsProfileDto() {
+    @DisplayName("본인이 조회하면 ProfileDto를 반환한다")
+    void getProfile_self_returnsProfileDto() {
       // given
       User user = fixtureUser(UUID.randomUUID(), "홍길동");
       Profile profile = Profile.createDefault(user);
@@ -333,12 +334,26 @@ class UserServiceTest {
       given(mockProfileRepository.findByIdWithUser(user.getId())).willReturn(Optional.of(profile));
 
       // when
-      ProfileDto result = userService.getProfile(user.getId());
+      ProfileDto result = userService.getProfile(user.getId(), user.getId());
 
       // then
       assertThat(result.userId()).isEqualTo(user.getId());
       assertThat(result.name()).isEqualTo("홍길동");
       assertThat(result.temperatureSensitivity()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("본인이 아니면 AccessDeniedException을 던지고 조회하지 않는다")
+    void getProfile_notSelf_throwsAccessDeniedExceptionAndDoesNotQuery() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UUID otherUserId = UUID.randomUUID();
+
+      // when & then
+      assertThatThrownBy(() -> userService.getProfile(userId, otherUserId))
+          .isInstanceOf(AccessDeniedException.class);
+
+      verify(mockProfileRepository, never()).findByIdWithUser(any());
     }
 
     @Test
@@ -349,7 +364,7 @@ class UserServiceTest {
       given(mockProfileRepository.findByIdWithUser(userId)).willReturn(Optional.empty());
 
       // when & then
-      assertThatThrownBy(() -> userService.getProfile(userId))
+      assertThatThrownBy(() -> userService.getProfile(userId, userId))
           .isInstanceOf(UserNotFoundException.class);
     }
   }
@@ -359,8 +374,8 @@ class UserServiceTest {
   class ChangeProfile {
 
     @Test
-    @DisplayName("프로필 필드를 변경한 뒤 변경된 ProfileDto를 반환한다")
-    void changeProfile_existingUser_updatesFieldsAndReturnsProfileDto() {
+    @DisplayName("본인이 수정하면 프로필 필드를 변경한 뒤 변경된 ProfileDto를 반환한다")
+    void changeProfile_self_updatesFieldsAndReturnsProfileDto() {
       // given
       User user = fixtureUser(UUID.randomUUID(), "홍길동");
       Profile profile = Profile.createDefault(user);
@@ -373,13 +388,29 @@ class UserServiceTest {
           "김철수", Gender.MALE, LocalDate.of(1995, 1, 1), locationRequest, 4);
 
       // when
-      ProfileDto result = userService.changeProfile(user.getId(), request, null);
+      ProfileDto result = userService.changeProfile(user.getId(), user.getId(), request, null);
 
       // then
       assertThat(result.name()).isEqualTo("김철수");
       assertThat(result.gender()).isEqualTo(Gender.MALE);
       assertThat(result.temperatureSensitivity()).isEqualTo(4);
       assertThat(user.getName()).isEqualTo("김철수");
+    }
+
+    @Test
+    @DisplayName("본인이 아니면 AccessDeniedException을 던지고 수정하지 않는다")
+    void changeProfile_notSelf_throwsAccessDeniedExceptionAndDoesNotUpdate() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UUID otherUserId = UUID.randomUUID();
+      ProfileUpdateRequest request =
+          new ProfileUpdateRequest("김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 3);
+
+      // when & then
+      assertThatThrownBy(() -> userService.changeProfile(userId, otherUserId, request, null))
+          .isInstanceOf(AccessDeniedException.class);
+
+      verify(mockProfileRepository, never()).findByIdWithUser(any());
     }
 
     @Test
@@ -392,7 +423,7 @@ class UserServiceTest {
           new ProfileUpdateRequest("김철수", Gender.MALE, LocalDate.of(1995, 1, 1), null, 3);
 
       // when & then
-      assertThatThrownBy(() -> userService.changeProfile(userId, request, null))
+      assertThatThrownBy(() -> userService.changeProfile(userId, userId, request, null))
           .isInstanceOf(UserNotFoundException.class);
     }
   }
@@ -402,20 +433,37 @@ class UserServiceTest {
   class ChangePassword {
 
     @Test
-    @DisplayName("비밀번호를 암호화해서 저장하고, 세션과 임시 비밀번호를 모두 폐기한다")
-    void changePassword_existingUser_encodesPasswordAndRevokesSessionAndTempPassword() {
+    @DisplayName("본인이 변경하면 비밀번호를 암호화해서 저장하고, 세션과 임시 비밀번호를 모두 폐기한다")
+    void changePassword_self_encodesPasswordAndRevokesSessionAndTempPassword() {
       // given
       User user = fixtureUser(UUID.randomUUID(), "홍길동");
       given(mockUserRepository.findById(user.getId())).willReturn(Optional.of(user));
       given(mockPasswordEncoder.encode("newpass1")).willReturn("new-encoded-password");
 
       // when
-      userService.changePassword(user.getId(), new ChangePasswordRequest("newpass1"));
+      userService.changePassword(user.getId(), user.getId(), new ChangePasswordRequest("newpass1"));
 
       // then
       assertThat(user.getPassword()).isEqualTo("new-encoded-password");
       verify(mockUserSessionRegistry).revoke(user.getId());
       verify(mockTempPasswordRegistry).revoke(user.getId());
+    }
+
+    @Test
+    @DisplayName("본인이 아니면 AccessDeniedException을 던지고 아무 것도 변경하지 않는다")
+    void changePassword_notSelf_throwsAccessDeniedExceptionAndChangesNothing() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UUID otherUserId = UUID.randomUUID();
+
+      // when & then
+      assertThatThrownBy(() -> userService.changePassword(
+          userId, otherUserId, new ChangePasswordRequest("newpass1")))
+          .isInstanceOf(AccessDeniedException.class);
+
+      verify(mockUserRepository, never()).findById(any());
+      verify(mockUserSessionRegistry, never()).revoke(any());
+      verify(mockTempPasswordRegistry, never()).revoke(any());
     }
 
     @Test
@@ -426,14 +474,15 @@ class UserServiceTest {
       given(mockUserRepository.findById(userId)).willReturn(Optional.empty());
 
       // when & then
-      assertThatThrownBy(
-          () -> userService.changePassword(userId, new ChangePasswordRequest("newpass1")))
+      assertThatThrownBy(() -> userService.changePassword(
+          userId, userId, new ChangePasswordRequest("newpass1")))
           .isInstanceOf(UserNotFoundException.class);
 
       verify(mockUserSessionRegistry, never()).revoke(any());
       verify(mockTempPasswordRegistry, never()).revoke(any());
     }
   }
+
 
   @Nested
   @DisplayName("계정 잠금 상태 변경")

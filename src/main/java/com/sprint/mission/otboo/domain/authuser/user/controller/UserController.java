@@ -1,6 +1,5 @@
 package com.sprint.mission.otboo.domain.authuser.user.controller;
 
-import com.sprint.mission.otboo.domain.authuser.auth.exception.AccessDeniedException;
 import com.sprint.mission.otboo.domain.authuser.user.controller.api.UserApi;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.ChangePasswordRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.ProfileUpdateRequest;
@@ -19,6 +18,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -53,11 +53,9 @@ public class UserController implements UserApi {
         .status(HttpStatus.CREATED)
         .body(userService.signUp(request));
   }
-
-  /**
-   * 어드민 기능
-   */
+  
   @Override
+  @PreAuthorize("hasAuthority('ADMIN')")
   @PatchMapping("/{userId}/role")
   public ResponseEntity<UserDto> changeRole(
       @PathVariable UUID userId,
@@ -72,10 +70,9 @@ public class UserController implements UserApi {
   public ResponseEntity<ProfileDto> getProfile(
       @PathVariable UUID userId,
       @CurrentUser UserPrincipal principal) {
-    checkSelf(userId, principal.userId());
     return ResponseEntity
         .status(HttpStatus.OK)
-        .body(userService.getProfile(userId));
+        .body(userService.getProfile(userId, principal.userId()));
   }
 
   @Override
@@ -85,10 +82,9 @@ public class UserController implements UserApi {
       @Valid @RequestPart ProfileUpdateRequest request,
       @RequestPart(required = false) MultipartFile image,
       @CurrentUser UserPrincipal principal) {
-    checkSelf(userId, principal.userId());
     return ResponseEntity
         .status(HttpStatus.OK)
-        .body(userService.changeProfile(userId, request, image));
+        .body(userService.changeProfile(userId, principal.userId(), request, image));
   }
 
   @Override
@@ -97,16 +93,13 @@ public class UserController implements UserApi {
       @PathVariable UUID userId,
       @Valid @RequestBody ChangePasswordRequest request,
       @CurrentUser UserPrincipal principal) {
-    checkSelf(userId, principal.userId());
     return ResponseEntity
         .status(HttpStatus.OK)
-        .body(userService.changePassword(userId, request));
+        .body(userService.changePassword(userId, principal.userId(), request));
   }
 
-  /**
-   * 어드민 기능
-   */
   @Override
+  @PreAuthorize("hasAuthority('ADMIN')")
   @PatchMapping("/{userId}/lock")
   public ResponseEntity<UserDto> changeLocked(
       @PathVariable UUID userId,
@@ -114,11 +107,5 @@ public class UserController implements UserApi {
     return ResponseEntity
         .status(HttpStatus.OK)
         .body(userService.changeLocked(userId, request));
-  }
-
-  private void checkSelf(UUID userId, UUID currentUserId) {
-    if (!userId.equals(currentUserId)) {
-      throw AccessDeniedException.withNone();
-    }
   }
 }
