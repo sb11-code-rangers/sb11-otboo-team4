@@ -152,12 +152,14 @@ class FollowControllerTest {
     @Test
     @DisplayName("존재하지 않는 팔로우면 404를 반환한다")
     void 존재하지_않는_팔로우면_404를_반환한다() throws Exception {
+      //given
       UUID followId = UUID.randomUUID();
       UUID currentUserId = UUID.randomUUID();
       SecurityContextHolder.getContext().setAuthentication(authenticationOf(currentUserId));
       willThrow(FollowNotFoundException.of(followId))
           .given(followService).delete(followId, currentUserId);
 
+      // when & then
       mockMvc.perform(delete("/api/follows/{followId}", followId))
           .andExpect(status().isNotFound());
     }
@@ -165,12 +167,14 @@ class FollowControllerTest {
     @Test
     @DisplayName("본인의 팔로우가 아니면 403을 반환한다")
     void 본인의_팔로우가_아니면_403을_반환한다() throws Exception {
+      // given
       UUID followId = UUID.randomUUID();
       UUID currentUserId = UUID.randomUUID();
       SecurityContextHolder.getContext().setAuthentication(authenticationOf(currentUserId));
       willThrow(FollowForbiddenException.notOwner(followId))
           .given(followService).delete(followId, currentUserId);
 
+      // when & then
       mockMvc.perform(delete("/api/follows/{followId}", followId))
           .andExpect(status().isForbidden());
     }
