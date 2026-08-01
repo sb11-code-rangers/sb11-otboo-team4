@@ -15,4 +15,11 @@ public abstract class OtbooException extends RuntimeException {
     this.status = status;
     this.details = details;
   }
+
+  protected OtbooException(HttpStatus status, String message, Map<String, Object> details,
+      Throwable cause) {
+    super(message, cause);
+    this.status = status;
+    this.details = Map.copyOf(details);
+  }
 }
