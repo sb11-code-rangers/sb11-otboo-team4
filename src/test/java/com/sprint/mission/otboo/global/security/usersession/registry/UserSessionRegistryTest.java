@@ -1,8 +1,9 @@
 package com.sprint.mission.otboo.global.security.usersession.registry;
 
-import com.sprint.mission.otboo.global.security.usersession.dto.UserSession;
-import com.sprint.mission.otboo.global.security.usersession.exception.RefreshTokenReusedException;
-import com.sprint.mission.otboo.global.security.usersession.exception.UserSessionExpiredException;
+import com.sprint.mission.otboo.security.usersession.dto.UserSession;
+import com.sprint.mission.otboo.security.usersession.exception.RefreshTokenReusedException;
+import com.sprint.mission.otboo.security.usersession.exception.UserSessionExpiredException;
+import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

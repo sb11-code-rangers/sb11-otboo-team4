@@ -1,12 +1,13 @@
 package com.sprint.mission.otboo.global.security.filter;
 
-import com.sprint.mission.otboo.global.security.details.UserPrincipal;
-import com.sprint.mission.otboo.global.security.token.dto.AccessTokenClaims;
-import com.sprint.mission.otboo.global.security.token.exception.ExpiredTokenException;
-import com.sprint.mission.otboo.global.security.token.exception.InvalidAccessTokenException;
-import com.sprint.mission.otboo.global.security.token.provider.TokenProvider;
-import com.sprint.mission.otboo.global.security.usersession.exception.UserSessionExpiredException;
-import com.sprint.mission.otboo.global.security.usersession.registry.UserSessionRegistry;
+import com.sprint.mission.otboo.security.details.UserPrincipal;
+import com.sprint.mission.otboo.security.filter.TokenAuthenticationFilter;
+import com.sprint.mission.otboo.security.token.dto.AccessTokenClaims;
+import com.sprint.mission.otboo.security.token.exception.ExpiredTokenException;
+import com.sprint.mission.otboo.security.token.exception.InvalidAccessTokenException;
+import com.sprint.mission.otboo.security.token.provider.TokenProvider;
+import com.sprint.mission.otboo.security.usersession.exception.UserSessionExpiredException;
+import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;

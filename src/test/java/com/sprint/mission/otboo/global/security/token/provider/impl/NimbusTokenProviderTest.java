@@ -1,9 +1,10 @@
 package com.sprint.mission.otboo.global.security.token.provider.impl;
 
-import com.sprint.mission.otboo.global.security.token.properties.TokenProperties;
-import com.sprint.mission.otboo.global.security.token.provider.TokenProvider;
+import com.sprint.mission.otboo.security.token.properties.TokenProperties;
+import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import com.sprint.mission.otboo.global.security.token.provider.TokenProviderContractTest;
 
+import com.sprint.mission.otboo.security.token.provider.impl.NimbusTokenProvider;
 import java.time.Clock;
 
 class NimbusTokenProviderTest extends TokenProviderContractTest {

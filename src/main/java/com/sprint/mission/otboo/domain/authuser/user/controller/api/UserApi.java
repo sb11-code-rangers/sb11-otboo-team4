@@ -9,7 +9,7 @@ import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserRoleUpdateR
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.ProfileDto;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
-import com.sprint.mission.otboo.global.security.details.UserPrincipal;
+import com.sprint.mission.otboo.security.details.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

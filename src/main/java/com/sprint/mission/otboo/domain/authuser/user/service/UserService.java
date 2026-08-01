@@ -19,7 +19,7 @@ import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
-import com.sprint.mission.otboo.global.security.usersession.registry.UserSessionRegistry;
+import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;
 import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

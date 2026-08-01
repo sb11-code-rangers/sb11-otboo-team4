@@ -22,7 +22,7 @@ import com.sprint.mission.otboo.domain.social.follow.dto.FollowSummaryDto;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowForbiddenException;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowNotFoundException;
 import com.sprint.mission.otboo.domain.social.follow.service.FollowService;
-import com.sprint.mission.otboo.global.security.details.UserPrincipal;
+import com.sprint.mission.otboo.security.details.UserPrincipal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;

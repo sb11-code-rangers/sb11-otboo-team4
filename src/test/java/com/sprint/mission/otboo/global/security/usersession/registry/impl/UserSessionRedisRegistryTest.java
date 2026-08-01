@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.global.security.usersession.registry.impl;
 
-import com.sprint.mission.otboo.global.security.usersession.dto.UserSession;
+import com.sprint.mission.otboo.security.usersession.dto.UserSession;
+import com.sprint.mission.otboo.security.usersession.registry.impl.UserSessionRedisRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

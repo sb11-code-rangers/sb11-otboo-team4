@@ -10,7 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.mission.otboo.domain.weathernotification.sse.service.SseService;
-import com.sprint.mission.otboo.global.security.details.UserPrincipal;
+import com.sprint.mission.otboo.security.details.UserPrincipal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;

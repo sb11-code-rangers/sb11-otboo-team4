@@ -32,7 +32,7 @@ import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailExc
 import com.sprint.mission.otboo.domain.authuser.user.service.UserService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
-import com.sprint.mission.otboo.global.security.details.UserPrincipal;
+import com.sprint.mission.otboo.security.details.UserPrincipal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;

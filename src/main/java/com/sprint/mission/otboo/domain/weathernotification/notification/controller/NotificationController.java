@@ -5,8 +5,8 @@ import com.sprint.mission.otboo.domain.weathernotification.notification.dto.Noti
 import com.sprint.mission.otboo.domain.weathernotification.notification.dto.NotificationListParams;
 import com.sprint.mission.otboo.domain.weathernotification.notification.service.NotificationService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
-import com.sprint.mission.otboo.global.security.details.CurrentUser;
-import com.sprint.mission.otboo.global.security.details.UserPrincipal;
+import com.sprint.mission.otboo.security.details.CurrentUser;
+import com.sprint.mission.otboo.security.details.UserPrincipal;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

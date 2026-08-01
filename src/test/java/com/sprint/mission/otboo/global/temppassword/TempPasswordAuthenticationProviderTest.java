@@ -3,7 +3,7 @@ package com.sprint.mission.otboo.global.temppassword;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
-import com.sprint.mission.otboo.global.security.details.CustomUserDetails;
+import com.sprint.mission.otboo.security.details.CustomUserDetails;
 import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

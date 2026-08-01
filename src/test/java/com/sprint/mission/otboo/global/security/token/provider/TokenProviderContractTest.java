@@ -1,11 +1,12 @@
 package com.sprint.mission.otboo.global.security.token.provider;
 
-import com.sprint.mission.otboo.global.security.token.dto.AccessTokenClaims;
-import com.sprint.mission.otboo.global.security.token.dto.RefreshTokenClaims;
-import com.sprint.mission.otboo.global.security.token.exception.ExpiredTokenException;
-import com.sprint.mission.otboo.global.security.token.exception.InvalidAccessTokenException;
-import com.sprint.mission.otboo.global.security.token.exception.InvalidRefreshTokenException;
-import com.sprint.mission.otboo.global.security.token.properties.TokenProperties;
+import com.sprint.mission.otboo.security.token.dto.AccessTokenClaims;
+import com.sprint.mission.otboo.security.token.dto.RefreshTokenClaims;
+import com.sprint.mission.otboo.security.token.exception.ExpiredTokenException;
+import com.sprint.mission.otboo.security.token.exception.InvalidAccessTokenException;
+import com.sprint.mission.otboo.security.token.exception.InvalidRefreshTokenException;
+import com.sprint.mission.otboo.security.token.properties.TokenProperties;
+import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

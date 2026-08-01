@@ -7,7 +7,7 @@ import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Location;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
-import com.sprint.mission.otboo.global.security.details.CustomUserDetails;
+import com.sprint.mission.otboo.security.details.CustomUserDetails;
 import org.springframework.stereotype.Component;
 
 @Component
