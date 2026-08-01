@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.exception;
+package com.sprint.mission.otboo.global.security.exception;
 
 import com.sprint.mission.otboo.global.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
