@@ -3,7 +3,7 @@ package com.sprint.mission.otboo.domain.weathernotification.notification.control
 import com.sprint.mission.otboo.domain.weathernotification.notification.dto.NotificationDto;
 import com.sprint.mission.otboo.domain.weathernotification.notification.dto.NotificationListParams;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
-import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import com.sprint.mission.otboo.global.security.details.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

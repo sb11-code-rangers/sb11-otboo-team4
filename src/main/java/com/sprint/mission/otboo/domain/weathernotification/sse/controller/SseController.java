@@ -2,8 +2,8 @@ package com.sprint.mission.otboo.domain.weathernotification.sse.controller;
 
 import com.sprint.mission.otboo.domain.weathernotification.sse.controller.api.SseApi;
 import com.sprint.mission.otboo.domain.weathernotification.sse.service.SseService;
-import com.sprint.mission.otboo.global.security.jwt.filter.CurrentUser;
-import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import com.sprint.mission.otboo.global.security.details.CurrentUser;
+import com.sprint.mission.otboo.global.security.details.UserPrincipal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;

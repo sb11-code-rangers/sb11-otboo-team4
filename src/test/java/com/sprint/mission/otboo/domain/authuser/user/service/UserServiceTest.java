@@ -35,7 +35,7 @@ import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
-import com.sprint.mission.otboo.global.usersession.UserSessionRegistry;
+import com.sprint.mission.otboo.global.security.usersession.registry.UserSessionRegistry;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;

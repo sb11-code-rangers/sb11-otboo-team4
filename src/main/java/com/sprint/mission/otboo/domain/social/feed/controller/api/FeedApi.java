@@ -4,7 +4,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.FeedCreateRequest;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedDto;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedListParams;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
-import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import com.sprint.mission.otboo.global.security.details.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

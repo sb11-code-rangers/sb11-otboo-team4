@@ -3,7 +3,7 @@ package com.sprint.mission.otboo.domain.social.follow.controller.api;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowCreateRequest;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowDto;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowSummaryDto;
-import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import com.sprint.mission.otboo.global.security.details.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

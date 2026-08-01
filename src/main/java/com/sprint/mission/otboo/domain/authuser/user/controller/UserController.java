@@ -11,8 +11,8 @@ import com.sprint.mission.otboo.domain.authuser.user.dto.response.ProfileDto;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.service.UserService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
-import com.sprint.mission.otboo.global.security.jwt.filter.CurrentUser;
-import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import com.sprint.mission.otboo.global.security.details.CurrentUser;
+import com.sprint.mission.otboo.global.security.details.UserPrincipal;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +53,7 @@ public class UserController implements UserApi {
         .status(HttpStatus.CREATED)
         .body(userService.signUp(request));
   }
-  
+
   @Override
   @PreAuthorize("hasAuthority('ADMIN')")
   @PatchMapping("/{userId}/role")

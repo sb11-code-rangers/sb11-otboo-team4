@@ -20,7 +20,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.FeedSortBy;
 import com.sprint.mission.otboo.domain.social.feed.service.FeedService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
-import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import com.sprint.mission.otboo.global.security.details.UserPrincipal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;

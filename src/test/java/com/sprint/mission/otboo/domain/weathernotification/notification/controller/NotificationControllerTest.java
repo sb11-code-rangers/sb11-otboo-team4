@@ -20,7 +20,7 @@ import com.sprint.mission.otboo.domain.weathernotification.notification.service.
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import com.sprint.mission.otboo.global.event.NotificationLevel;
-import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
+import com.sprint.mission.otboo.global.security.details.UserPrincipal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -89,7 +89,8 @@ class NotificationControllerTest {
           UUID.randomUUID(), Instant.now(), currentUserId, "제목", "내용", NotificationLevel.INFO);
       CursorPageResponse<NotificationDto> response = new CursorPageResponse<>(
           List.of(dto), null, null, false, 1L, "createdAt", SortDirection.DESCENDING);
-      when(notificationService.getNotifications(eq(currentUserId), any(NotificationListParams.class)))
+      when(notificationService.getNotifications(eq(currentUserId),
+          any(NotificationListParams.class)))
           .thenReturn(response);
 
       // when & then
