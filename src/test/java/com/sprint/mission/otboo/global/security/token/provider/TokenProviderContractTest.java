@@ -20,7 +20,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-abstract class TokenProviderContractTest {
+public abstract class TokenProviderContractTest {
 
   private static final String ACCESS_SECRET =
       "dGVzdC1hY2Nlc3Mtc2VjcmV0LWtleS1mb3Itand0LXByb3ZpZGVyLXVuaXQtdGVzdC1wbGVhc2U=";
