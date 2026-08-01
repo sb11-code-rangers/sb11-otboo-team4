@@ -1,107 +1,61 @@
 package com.sprint.mission.otboo.global.security.details;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
-import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.security.core.GrantedAuthority;
 
 class CustomUserDetailsTest {
 
-  @Nested
-  @DisplayName("생성")
-  class Construction {
+  @Test
+  @DisplayName("User 필드를 그대로 위임해서 노출한다")
+  void constructor_exposesUserFieldsDirectly() {
+    User user = User.create("홍길동", "hong@test.com", "encoded-password");
 
-    @Test
-    @DisplayName("User의 필드를 그대로 옮겨 담는다")
-    void constructor_copiesFieldsFromUser() {
-      // given
-      User user = User.create("홍길동", "hong@test.com", "encoded-password");
+    CustomUserDetails principal = new CustomUserDetails(user);
 
-      // when
-      CustomUserDetails principal = new CustomUserDetails(user);
-
-      // then
-      assertThat(principal.getUserId()).isEqualTo(user.getId());
-      assertThat(principal.getEmail()).isEqualTo(user.getEmail());
-      assertThat(principal.getName()).isEqualTo(user.getName());
-      assertThat(principal.getRole()).isEqualTo(Role.USER);
-      assertThat(principal.isLocked()).isFalse();
-      assertThat(principal.getCreatedAt()).isEqualTo(user.getCreatedAt());
-      assertThat(principal.getPassword()).isEqualTo(user.getPassword());
-    }
+    assertThat(principal.getUserId()).isEqualTo(user.getId());
+    assertThat(principal.getEmail()).isEqualTo(user.getEmail());
+    assertThat(principal.getName()).isEqualTo(user.getName());
+    assertThat(principal.isLocked()).isFalse();
+    assertThat(principal.getUsername()).isEqualTo(user.getEmail());
+    assertThat(principal.getPassword()).isEqualTo(user.getPassword());
   }
 
-  @Nested
-  @DisplayName("getUsername")
-  class GetUsername {
+  @Test
+  @DisplayName("역할 이름 그대로의 GrantedAuthority 하나를 반환한다")
+  void getAuthorities_returnsSingleAuthorityMatchingRoleName() {
+    User admin = User.createAdmin("관리자", "admin@test.com", "encoded-password");
 
-    @Test
-    @DisplayName("이메일을 username으로 사용한다")
-    void getUsername_returnsEmail() {
-      User user = User.create("홍길동", "hong@test.com", "encoded-password");
-      CustomUserDetails principal = new CustomUserDetails(user);
+    CustomUserDetails principal = new CustomUserDetails(admin);
 
-      assertThat(principal.getUsername()).isEqualTo("hong@test.com");
-    }
+    assertThat(principal.getAuthorities())
+        .extracting(GrantedAuthority::getAuthority)
+        .containsExactly("ADMIN");
   }
 
-  @Nested
-  @DisplayName("getAuthorities")
-  class GetAuthorities {
+  @Test
+  @DisplayName("잠긴 계정은 isAccountNonLocked가 false를 반환한다")
+  void isAccountNonLocked_lockedUser_returnsFalse() {
+    User user = User.create("홍길동", "hong@test.com", "encoded-password");
+    user.lock(LockReason.ADMIN_ACTION);
 
-    @Test
-    @DisplayName("role 이름을 그대로 권한으로 반환한다")
-    void getAuthorities_returnsRoleAsAuthority() {
-      User admin = User.createAdmin("관리자", "admin@test.com", "encoded-password");
-      CustomUserDetails principal = new CustomUserDetails(admin);
+    CustomUserDetails principal = new CustomUserDetails(user);
 
-      assertThat(principal.getAuthorities())
-          .extracting(Object::toString)
-          .containsExactly("ADMIN");
-    }
+    assertThat(principal.isAccountNonLocked()).isFalse();
   }
 
-  @Nested
-  @DisplayName("isAccountNonLocked")
-  class IsAccountNonLocked {
+  @Test
+  @DisplayName("eraseCredentials를 호출하면 비밀번호가 null이 된다")
+  void eraseCredentials_clearsPassword() {
+    User user = User.create("홍길동", "hong@test.com", "encoded-password");
+    CustomUserDetails principal = new CustomUserDetails(user);
 
-    @Test
-    @DisplayName("잠기지 않은 계정은 true를 반환한다")
-    void isAccountNonLocked_unlockedUser_returnsTrue() {
-      User user = User.create("홍길동", "hong@test.com", "encoded-password");
-      CustomUserDetails principal = new CustomUserDetails(user);
+    principal.eraseCredentials();
 
-      assertThat(principal.isAccountNonLocked()).isTrue();
-    }
-
-    @Test
-    @DisplayName("잠긴 계정은 false를 반환한다 (DaoAuthenticationProvider가 이 값을 보고 LockedException을 던짐)")
-    void isAccountNonLocked_lockedUser_returnsFalse() {
-      User user = User.create("홍길동", "hong@test.com", "encoded-password");
-      user.lock(LockReason.ADMIN_ACTION);
-      CustomUserDetails principal = new CustomUserDetails(user);
-
-      assertThat(principal.isAccountNonLocked()).isFalse();
-    }
-  }
-
-  @Nested
-  @DisplayName("eraseCredentials")
-  class EraseCredentials {
-
-    @Test
-    @DisplayName("호출하면 비밀번호를 null로 지운다")
-    void eraseCredentials_setsPasswordToNull() {
-      User user = User.create("홍길동", "hong@test.com", "encoded-password");
-      CustomUserDetails principal = new CustomUserDetails(user);
-
-      principal.eraseCredentials();
-
-      assertThat(principal.getPassword()).isNull();
-    }
+    assertThat(principal.getPassword()).isNull();
   }
 }
