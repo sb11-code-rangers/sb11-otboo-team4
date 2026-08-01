@@ -27,6 +27,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 @EnableWebSecurity
@@ -53,6 +54,7 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(
       HttpSecurity http,
+      JsonMapper jsonMapper,
       TokenProvider tokenProvider,
       UserSessionRegistry userSessionRegistry
   ) throws Exception {
@@ -74,14 +76,14 @@ public class SecurityConfig {
         UsernamePasswordAuthenticationFilter.class
     );
 
-//    http.exceptionHandling(ex -> ex
-//        .authenticationEntryPoint((request, response, authException) ->
-//            ErrorResponseWriter.write(response, objectMapper, HttpStatus.UNAUTHORIZED,
-//                authException, "인증이 필요합니다."))
-//        .accessDeniedHandler((request, response, accessDeniedException) ->
-//            ErrorResponseWriter.write(response, objectMapper, HttpStatus.FORBIDDEN,
-//                accessDeniedException, "접근 권한이 없습니다."))
-//    );
+    http.exceptionHandling(ex -> ex
+        .authenticationEntryPoint((request, response, authException) ->
+            ErrorResponseWriter.write(response, jsonMapper, HttpStatus.UNAUTHORIZED,
+                authException, "인증이 필요합니다."))
+        .accessDeniedHandler((request, response, accessDeniedException) ->
+            ErrorResponseWriter.write(response, jsonMapper, HttpStatus.FORBIDDEN,
+                accessDeniedException, "접근 권한이 없습니다."))
+    );
 
     http.authorizeHttpRequests(auth -> auth
         .requestMatchers("/", "/index.html", "/favicon.ico", "/css/**", "/js/**", "/images/**",

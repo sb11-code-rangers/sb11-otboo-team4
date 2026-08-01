@@ -1,10 +1,10 @@
 package com.sprint.mission.otboo.global.exception;
 
-import tools.jackson.databind.ObjectMapper;
 import com.sprint.mission.otboo.global.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -16,7 +16,7 @@ public final class ErrorResponseWriter {
 
   public static void write(
       HttpServletResponse response,
-      ObjectMapper objectMapper,
+      JsonMapper jsonMapper,
       HttpStatus status,
       Exception exception,
       String message
@@ -28,6 +28,6 @@ public final class ErrorResponseWriter {
     response.setStatus(status.value());
     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     response.setCharacterEncoding("UTF-8");
-    response.getWriter().write(objectMapper.writeValueAsString(body));
+    response.getWriter().write(jsonMapper.writeValueAsString(body));
   }
 }
