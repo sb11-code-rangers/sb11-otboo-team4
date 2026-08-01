@@ -2,6 +2,7 @@ package com.sprint.mission.otboo.global.security.token.provider;
 
 import com.sprint.mission.otboo.global.security.token.dto.AccessTokenClaims;
 import com.sprint.mission.otboo.global.security.token.dto.RefreshTokenClaims;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -18,4 +19,6 @@ public interface TokenProvider {
   Instant getAccessTokenExpiresAt(Instant from);
 
   Instant getRefreshTokenExpiresAt(Instant from);
+  
+  Duration getRefreshTokenTtl();
 }

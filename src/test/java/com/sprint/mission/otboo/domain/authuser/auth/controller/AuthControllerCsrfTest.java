@@ -6,8 +6,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
-import com.sprint.mission.otboo.global.config.SecurityConfig;
-import com.sprint.mission.otboo.global.cookie.RefreshTokenCookieProvider;
+import com.sprint.mission.otboo.global.security.config.SecurityConfig;
+import com.sprint.mission.otboo.global.security.cookie.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.global.security.details.CustomUserDetailsService;
 import com.sprint.mission.otboo.global.security.jwt.JwtProvider;
 import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;

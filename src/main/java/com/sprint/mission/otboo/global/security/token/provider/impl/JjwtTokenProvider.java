@@ -15,6 +15,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -106,6 +107,11 @@ public class JjwtTokenProvider implements TokenProvider {
   @Override
   public Instant getRefreshTokenExpiresAt(Instant from) {
     return from.plus(tokenProperties.refreshTokenExpirationDays(), ChronoUnit.DAYS);
+  }
+
+  @Override
+  public Duration getRefreshTokenTtl() {
+    return Duration.ofDays(tokenProperties.refreshTokenExpirationDays());
   }
 
   private Claims verifyAndParse(String token, SecretKey key,

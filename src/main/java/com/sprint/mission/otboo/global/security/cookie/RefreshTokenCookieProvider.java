@@ -1,13 +1,12 @@
-package com.sprint.mission.otboo.global.cookie;
+package com.sprint.mission.otboo.global.security.cookie;
 
-import com.sprint.mission.otboo.global.security.jwt.JwtProperties;
+import com.sprint.mission.otboo.global.security.token.properties.TokenProperties;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
-
-import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -15,11 +14,11 @@ public class RefreshTokenCookieProvider {
 
   public static final String REFRESH_TOKEN = "REFRESH_TOKEN";
 
-  private final JwtProperties jwtProperties;
-  private final CookieProperties cookieProperties;
+  private final TokenProperties tokenProperties;
+  private final RefreshCookieProperties cookieProperties;
 
   public void attach(HttpServletResponse response, String refreshToken) {
-    Duration maxAge = Duration.ofDays(jwtProperties.refreshTokenExpirationDays());
+    Duration maxAge = Duration.ofDays(tokenProperties.refreshTokenExpirationDays());
     response.addHeader(HttpHeaders.SET_COOKIE, build(refreshToken, maxAge).toString());
   }
 

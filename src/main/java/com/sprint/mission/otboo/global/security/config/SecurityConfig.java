@@ -1,14 +1,14 @@
-package com.sprint.mission.otboo.global.config;
+package com.sprint.mission.otboo.global.security.config;
 
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import com.sprint.mission.otboo.global.exception.ErrorResponseWriter;
 import com.sprint.mission.otboo.global.security.details.CustomUserDetailsService;
-import com.sprint.mission.otboo.global.security.jwt.JwtProvider;
-import com.sprint.mission.otboo.global.security.jwt.filter.JwtAuthenticationFilter;
+import com.sprint.mission.otboo.global.security.filter.TokenAuthenticationFilter;
+import com.sprint.mission.otboo.global.security.token.provider.TokenProvider;
+import com.sprint.mission.otboo.global.security.usersession.registry.UserSessionRegistry;
 import com.sprint.mission.otboo.global.temppassword.TempPasswordAuthenticationProvider;
 import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
-import com.sprint.mission.otboo.global.usersession.UserSessionRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -53,8 +53,7 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(
       HttpSecurity http,
-      ObjectMapper objectMapper,
-      JwtProvider jwtProvider,
+      TokenProvider tokenProvider,
       UserSessionRegistry userSessionRegistry
   ) throws Exception {
 
@@ -71,18 +70,18 @@ public class SecurityConfig {
     );
 
     http.addFilterBefore(
-        new JwtAuthenticationFilter(jwtProvider, userSessionRegistry),
+        new TokenAuthenticationFilter(tokenProvider, userSessionRegistry),
         UsernamePasswordAuthenticationFilter.class
     );
 
-    http.exceptionHandling(ex -> ex
-        .authenticationEntryPoint((request, response, authException) ->
-            ErrorResponseWriter.write(response, objectMapper, HttpStatus.UNAUTHORIZED,
-                authException, "인증이 필요합니다."))
-        .accessDeniedHandler((request, response, accessDeniedException) ->
-            ErrorResponseWriter.write(response, objectMapper, HttpStatus.FORBIDDEN,
-                accessDeniedException, "접근 권한이 없습니다."))
-    );
+//    http.exceptionHandling(ex -> ex
+//        .authenticationEntryPoint((request, response, authException) ->
+//            ErrorResponseWriter.write(response, objectMapper, HttpStatus.UNAUTHORIZED,
+//                authException, "인증이 필요합니다."))
+//        .accessDeniedHandler((request, response, accessDeniedException) ->
+//            ErrorResponseWriter.write(response, objectMapper, HttpStatus.FORBIDDEN,
+//                accessDeniedException, "접근 권한이 없습니다."))
+//    );
 
     http.authorizeHttpRequests(auth -> auth
         .requestMatchers("/", "/index.html", "/favicon.ico", "/css/**", "/js/**", "/images/**",

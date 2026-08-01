@@ -1,9 +1,9 @@
-package com.sprint.mission.otboo.global.cookie;
+package com.sprint.mission.otboo.global.security.cookie;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "app.cookie")
-public record CookieProperties(
+@ConfigurationProperties(prefix = "auth.refresh-cookie")
+public record RefreshCookieProperties(
     boolean secure
 ) {
 

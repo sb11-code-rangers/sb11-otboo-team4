@@ -12,7 +12,7 @@ import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
-import com.sprint.mission.otboo.global.cookie.RefreshTokenCookieProvider;
+import com.sprint.mission.otboo.global.security.cookie.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.global.security.jwt.exception.InvalidRefreshTokenException;
 import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
 import jakarta.servlet.http.Cookie;

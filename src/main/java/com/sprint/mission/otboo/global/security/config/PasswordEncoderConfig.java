@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.config;
+package com.sprint.mission.otboo.global.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

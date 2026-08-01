@@ -20,6 +20,7 @@ import com.sprint.mission.otboo.global.security.token.properties.TokenProperties
 import com.sprint.mission.otboo.global.security.token.provider.TokenProvider;
 import java.text.ParseException;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
@@ -133,6 +134,11 @@ public class NimbusTokenProvider implements TokenProvider {
     } catch (JOSEException e) {
       throw new IllegalStateException("토큰 서명 실패", e);
     }
+  }
+
+  @Override
+  public Duration getRefreshTokenTtl() {
+    return Duration.ofDays(tokenProperties.refreshTokenExpirationDays());
   }
 
   private JWTClaimsSet verifyAndParse(String token, Instant now, JWSVerifier verifier,

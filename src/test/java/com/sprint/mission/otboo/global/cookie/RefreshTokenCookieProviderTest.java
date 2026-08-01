@@ -1,5 +1,7 @@
 package com.sprint.mission.otboo.global.cookie;
 
+import com.sprint.mission.otboo.global.security.cookie.RefreshCookieProperties;
+import com.sprint.mission.otboo.global.security.cookie.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.global.security.jwt.JwtProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,7 +23,7 @@ class RefreshTokenCookieProviderTest {
   @BeforeEach
   void setUp() {
     refreshTokenCookieProvider = new RefreshTokenCookieProvider(JWT_PROPERTIES,
-        new CookieProperties(true));
+        new RefreshCookieProperties(true));
   }
 
   @Nested
@@ -52,7 +54,7 @@ class RefreshTokenCookieProviderTest {
     void attach_secureFalse_omitsSecureAttribute() {
       // given
       RefreshTokenCookieProvider insecureProvider =
-          new RefreshTokenCookieProvider(JWT_PROPERTIES, new CookieProperties(false));
+          new RefreshTokenCookieProvider(JWT_PROPERTIES, new RefreshCookieProperties(false));
       MockHttpServletResponse response = new MockHttpServletResponse();
 
       // when

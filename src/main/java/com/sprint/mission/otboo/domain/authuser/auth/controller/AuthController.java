@@ -6,7 +6,7 @@ import com.sprint.mission.otboo.domain.authuser.auth.dto.request.SignInRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
-import com.sprint.mission.otboo.global.cookie.RefreshTokenCookieProvider;
+import com.sprint.mission.otboo.global.security.cookie.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.global.security.jwt.filter.CurrentUser;
 import com.sprint.mission.otboo.global.security.jwt.filter.UserPrincipal;
 import jakarta.servlet.http.HttpServletResponse;
