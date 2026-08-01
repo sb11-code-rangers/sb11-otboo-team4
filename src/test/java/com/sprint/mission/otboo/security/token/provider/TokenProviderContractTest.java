@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.token.provider;
+package com.sprint.mission.otboo.security.token.provider;
 
 import com.sprint.mission.otboo.security.token.dto.AccessTokenClaims;
 import com.sprint.mission.otboo.security.token.dto.RefreshTokenClaims;

@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.filter;
+package com.sprint.mission.otboo.security.filter;
 
 import com.sprint.mission.otboo.security.details.UserPrincipal;
 import com.sprint.mission.otboo.security.filter.TokenAuthenticationFilter;

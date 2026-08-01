@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.details;
+package com.sprint.mission.otboo.security.details;
 
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;

@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.details;
+package com.sprint.mission.otboo.security.details;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.usersession.exception;
+package com.sprint.mission.otboo.security.usersession.exception;
 
 import com.sprint.mission.otboo.security.usersession.exception.RefreshTokenReusedException;
 import com.sprint.mission.otboo.security.usersession.exception.UserSessionExpiredException;

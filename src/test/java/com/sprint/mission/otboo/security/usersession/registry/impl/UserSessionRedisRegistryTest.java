@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.usersession.registry.impl;
+package com.sprint.mission.otboo.security.usersession.registry.impl;
 
 import com.sprint.mission.otboo.security.usersession.dto.UserSession;
 import com.sprint.mission.otboo.security.usersession.registry.impl.UserSessionRedisRegistry;

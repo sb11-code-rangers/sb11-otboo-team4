@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.token.exception;
+package com.sprint.mission.otboo.security.token.exception;
 
 import com.sprint.mission.otboo.security.token.exception.ExpiredTokenException;
 import com.sprint.mission.otboo.security.token.exception.InvalidAccessTokenException;

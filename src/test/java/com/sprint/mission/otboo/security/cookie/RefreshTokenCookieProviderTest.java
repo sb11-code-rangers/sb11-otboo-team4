@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.security.cookie;
+package com.sprint.mission.otboo.security.cookie;
 
 import com.sprint.mission.otboo.security.cookie.RefreshCookieProperties;
 import com.sprint.mission.otboo.security.cookie.RefreshTokenCookieProvider;
