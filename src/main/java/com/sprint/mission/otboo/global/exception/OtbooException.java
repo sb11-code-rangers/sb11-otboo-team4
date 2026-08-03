@@ -20,6 +20,6 @@ public abstract class OtbooException extends RuntimeException {
       Throwable cause) {
     super(message, cause);
     this.status = status;
-    this.details = Map.copyOf(details);
+    this.details = details;
   }
 }
