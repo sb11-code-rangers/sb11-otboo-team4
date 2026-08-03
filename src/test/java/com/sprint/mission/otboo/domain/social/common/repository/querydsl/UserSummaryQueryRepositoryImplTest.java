@@ -10,6 +10,7 @@ import com.sprint.mission.otboo.domain.social.common.dto.UserSummary;
 import com.sprint.mission.otboo.domain.social.common.repository.querydsl.impl.UserSummaryQueryRepositoryImpl;
 import com.sprint.mission.otboo.global.config.JpaConfig;
 import com.sprint.mission.otboo.global.config.QuerydslConfig;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -126,4 +127,32 @@ class UserSummaryQueryRepositoryImplTest {
       assertThat(result).isFalse();
     }
   }
+
+  @Nested
+  @DisplayName("findByUserIds")
+  class FindByUserIds {
+
+    @Test
+    @DisplayName("여러 userId로 조회하면 해당 UserSummary들을 반환한다")
+    void 여러_userId로_조회하면_해당_UserSummary들을_반환한다() {
+      // given
+      User user1 = testEntityManager.persist(User.create("우디", "woody@otboo.io", "password"));
+      User user2 = testEntityManager.persist(User.create("버즈", "buzz@otboo.io", "password"));
+      testEntityManager.persist(Profile.createDefault(user1));
+      testEntityManager.persist(Profile.createDefault(user2));
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      // when
+      List<UserSummary> result = userSummaryQueryRepository.findByUserIds(
+          List.of(user1.getId(), user2.getId()));
+
+      // then
+      assertThat(result)
+          .extracting(UserSummary::userId)
+          .containsExactlyInAnyOrder(user1.getId(), user2.getId());
+    }
+  }
+
+
 }

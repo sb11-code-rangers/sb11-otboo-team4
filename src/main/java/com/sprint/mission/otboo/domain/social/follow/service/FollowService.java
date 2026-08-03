@@ -2,20 +2,28 @@ package com.sprint.mission.otboo.domain.social.follow.service;
 
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.social.common.dto.UserSummary;
-import com.sprint.mission.otboo.domain.social.common.repository.querydsl.impl.UserSummaryQueryRepositoryImpl;
+import com.sprint.mission.otboo.domain.social.common.repository.querydsl.UserSummaryQueryRepository;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowCreateRequest;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowDto;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowSummaryDto;
+import com.sprint.mission.otboo.domain.social.follow.dto.FollowerListParams;
+import com.sprint.mission.otboo.domain.social.follow.dto.FollowingListParams;
 import com.sprint.mission.otboo.domain.social.follow.entity.Follow;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowForbiddenException;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowNotFoundException;
 import com.sprint.mission.otboo.domain.social.follow.exception.SelfFollowNotAllowedException;
 import com.sprint.mission.otboo.domain.social.follow.mapper.FollowMapper;
 import com.sprint.mission.otboo.domain.social.follow.repository.FollowRepository;
+import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.event.NotificationLevel;
 import com.sprint.mission.otboo.global.event.NotificationRequestedEvent;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
@@ -34,7 +42,7 @@ public class FollowService {
 
   private final FollowRepository followRepository;
   private final FollowMapper followMapper;
-  private final UserSummaryQueryRepositoryImpl userSummaryQueryRepositoryImpl;
+  private final UserSummaryQueryRepository userSummaryQueryRepository;
   private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
@@ -44,8 +52,8 @@ public class FollowService {
 
     validateCreateRequest(followerId, followeeId, currentUserId);
 
-    UserSummary follower = userSummaryQueryRepositoryImpl.findByUserId(followerId);
-    UserSummary followee = userSummaryQueryRepositoryImpl.findByUserId(followeeId);
+    UserSummary follower = userSummaryQueryRepository.findByUserId(followerId);
+    UserSummary followee = userSummaryQueryRepository.findByUserId(followeeId);
 
     Follow follow = findOrCreateFollow(followerId, followeeId, follower.name());
 
@@ -72,9 +80,8 @@ public class FollowService {
     }
   }
 
-  @Transactional(readOnly = true)
   public FollowSummaryDto getSummary(UUID userId, UUID currentUserId) {
-    if (!userSummaryQueryRepositoryImpl.existsByUserId(userId)) {
+    if (!userSummaryQueryRepository.existsByUserId(userId)) {
       throw UserNotFoundException.withNone();
     }
 
@@ -92,6 +99,14 @@ public class FollowService {
         userId, followerCount, followingCount, followedByMe, followedByMeId, followingMe);
   }
 
+  public CursorPageResponse<FollowDto> getFollowings(FollowingListParams params) {
+    return toDtoPage(followRepository.findFollowings(params));
+  }
+
+  public CursorPageResponse<FollowDto> getFollowers(FollowerListParams params) {
+    return toDtoPage(followRepository.findFollowers(params));
+  }
+
   @Transactional
   public void delete(UUID followId, UUID currentUserId) {
     Follow follow = followRepository.findById(followId)
@@ -104,6 +119,26 @@ public class FollowService {
     followRepository.delete(follow);
     log.info("팔로우 취소 완료: followId={}, followerId={}, followeeId={}",
         followId, follow.getFollowerId(), follow.getFolloweeId());
+  }
+
+  private CursorPageResponse<FollowDto> toDtoPage(CursorPageResponse<Follow> page) {
+    List<Follow> follows = page.data();
+    Map<UUID, UserSummary> summaryMap = follows.isEmpty() ? Map.of() :
+        userSummaryQueryRepository.findByUserIds(
+                follows.stream()
+                    .flatMap(f -> Stream.of(f.getFollowerId(), f.getFolloweeId()))
+                    .distinct().toList()
+            ).stream()
+            .collect(Collectors.toMap(UserSummary::userId, Function.identity()));
+
+    List<FollowDto> data = follows.stream()
+        .map(f -> followMapper.toDto(f,
+            summaryMap.get(f.getFollowerId()),
+            summaryMap.get(f.getFolloweeId())))
+        .toList();
+
+    return new CursorPageResponse<>(data, page.nextCursor(), page.nextIdAfter(),
+        page.hasNext(), page.totalCount(), page.sortBy(), page.sortDirection());
   }
 
   private void validateCreateRequest(UUID followerId, UUID followeeId, UUID currentUserId) {

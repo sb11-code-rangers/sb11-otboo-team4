@@ -4,6 +4,9 @@ import com.sprint.mission.otboo.domain.social.follow.dto.FollowCreateRequest;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowDto;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowSummaryDto;
 import com.sprint.mission.otboo.security.details.UserPrincipal;
+import com.sprint.mission.otboo.domain.social.follow.dto.FollowerListParams;
+import com.sprint.mission.otboo.domain.social.follow.dto.FollowingListParams;
+import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,6 +34,20 @@ public interface FollowApi {
       @ApiResponse(responseCode = "400", description = "팔로우 조회 실패")
   })
   ResponseEntity<FollowSummaryDto> getFollowSummary(UUID userId, UserPrincipal principal);
+
+  @Operation(summary = "팔로잉 목록 조회", operationId = "getFollowings")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "팔로잉 목록 조회 성공"),
+      @ApiResponse(responseCode = "400", description = "팔로잉 목록 조회 실패")
+  })
+  ResponseEntity<CursorPageResponse<FollowDto>> getFollowings(@Valid FollowingListParams params);
+
+  @Operation(summary = "팔로워 목록 조회", operationId = "getFollowers")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "팔로워 목록 조회 성공"),
+      @ApiResponse(responseCode = "400", description = "팔로워 목록 조회 실패")
+  })
+  ResponseEntity<CursorPageResponse<FollowDto>> getFollowers(@Valid FollowerListParams params);
 
   @Operation(summary = "팔로우 취소", operationId = "cancelFollow")
   @ApiResponses({

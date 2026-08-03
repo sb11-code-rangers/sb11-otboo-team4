@@ -8,6 +8,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.social.common.dto.UserSummary;
 import com.sprint.mission.otboo.domain.social.common.repository.querydsl.UserSummaryQueryRepository;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -42,5 +44,15 @@ public class UserSummaryQueryRepositoryImpl implements UserSummaryQueryRepositor
         .fetchFirst();
 
     return fetchOne != null;
+  }
+
+  public List<UserSummary> findByUserIds(Collection<UUID> userIds) {
+    return queryFactory
+        .select(Projections.constructor(UserSummary.class,
+            user.id, user.name, profile.profileImageUrl))
+        .from(user)
+        .leftJoin(profile).on(profile.id.eq(user.id))
+        .where(user.id.in(userIds))
+        .fetch();
   }
 }
