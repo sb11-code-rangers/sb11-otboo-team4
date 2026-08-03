@@ -14,18 +14,24 @@ import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitra
 import com.navercorp.fixturemonkey.jakarta.validation.plugin.JakartaValidationPlugin;
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.social.common.dto.UserSummary;
-import com.sprint.mission.otboo.domain.social.common.repository.querydsl.impl.UserSummaryQueryRepositoryImpl;
+import com.sprint.mission.otboo.domain.social.common.repository.querydsl.UserSummaryQueryRepository;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowCreateRequest;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowDto;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowSummaryDto;
+import com.sprint.mission.otboo.domain.social.follow.dto.FollowerListParams;
+import com.sprint.mission.otboo.domain.social.follow.dto.FollowingListParams;
 import com.sprint.mission.otboo.domain.social.follow.entity.Follow;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowForbiddenException;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowNotFoundException;
 import com.sprint.mission.otboo.domain.social.follow.exception.SelfFollowNotAllowedException;
 import com.sprint.mission.otboo.domain.social.follow.mapper.FollowMapper;
 import com.sprint.mission.otboo.domain.social.follow.repository.FollowRepository;
+import com.sprint.mission.otboo.global.dto.CursorPageResponse;
+import com.sprint.mission.otboo.global.dto.SortDirection;
 import com.sprint.mission.otboo.global.event.NotificationLevel;
 import com.sprint.mission.otboo.global.event.NotificationRequestedEvent;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.hibernate.exception.ConstraintViolationException;
@@ -59,7 +65,7 @@ class FollowServiceTest {
   private FollowMapper followMapper;
 
   @Mock
-  private UserSummaryQueryRepositoryImpl userSummaryQueryRepositoryImpl;
+  private UserSummaryQueryRepository userSummaryQueryRepository;
 
   @Mock
   private ApplicationEventPublisher eventPublisher;
@@ -93,8 +99,8 @@ class FollowServiceTest {
       FollowDto expected = new FollowDto(persistedFollow.getId(), followeeSummary, followerSummary);
 
       given(followRepository.save(any(Follow.class))).willReturn(persistedFollow);
-      given(userSummaryQueryRepositoryImpl.findByUserId(followerId)).willReturn(followerSummary);
-      given(userSummaryQueryRepositoryImpl.findByUserId(followeeId)).willReturn(followeeSummary);
+      given(userSummaryQueryRepository.findByUserId(followerId)).willReturn(followerSummary);
+      given(userSummaryQueryRepository.findByUserId(followeeId)).willReturn(followeeSummary);
       given(followMapper.toDto(eq(persistedFollow), eq(followerSummary), eq(followeeSummary)))
           .willReturn(expected);
 
@@ -110,8 +116,8 @@ class FollowServiceTest {
       assertThat(savedFollow.getFollowerId()).isEqualTo(followerId);
       assertThat(savedFollow.getFolloweeId()).isEqualTo(followeeId);
 
-      verify(userSummaryQueryRepositoryImpl).findByUserId(followerId);
-      verify(userSummaryQueryRepositoryImpl).findByUserId(followeeId);
+      verify(userSummaryQueryRepository).findByUserId(followerId);
+      verify(userSummaryQueryRepository).findByUserId(followeeId);
     }
 
     @Test
@@ -168,8 +174,8 @@ class FollowServiceTest {
           .willReturn(true);
       given(followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId))
           .willReturn(Optional.of(existing));
-      given(userSummaryQueryRepositoryImpl.findByUserId(followerId)).willReturn(followerSummary);
-      given(userSummaryQueryRepositoryImpl.findByUserId(followeeId)).willReturn(followeeSummary);
+      given(userSummaryQueryRepository.findByUserId(followerId)).willReturn(followerSummary);
+      given(userSummaryQueryRepository.findByUserId(followeeId)).willReturn(followeeSummary);
       given(followMapper.toDto(eq(existing), eq(followerSummary), eq(followeeSummary)))
           .willReturn(expected);
 
@@ -207,8 +213,8 @@ class FollowServiceTest {
           .willThrow(uniqueViolation("uq_follows_follower_id_followee_id"));
       given(followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId))
           .willReturn(Optional.of(existing));
-      given(userSummaryQueryRepositoryImpl.findByUserId(followerId)).willReturn(followerSummary);
-      given(userSummaryQueryRepositoryImpl.findByUserId(followeeId)).willReturn(followeeSummary);
+      given(userSummaryQueryRepository.findByUserId(followerId)).willReturn(followerSummary);
+      given(userSummaryQueryRepository.findByUserId(followeeId)).willReturn(followeeSummary);
       given(followMapper.toDto(eq(existing), eq(followerSummary), eq(followeeSummary)))
           .willReturn(expected);
 
@@ -235,8 +241,8 @@ class FollowServiceTest {
           .set("userId", followerId).sample();
       UserSummary followeeSummary = fm.giveMeBuilder(UserSummary.class)
           .set("userId", followeeId).sample();
-      given(userSummaryQueryRepositoryImpl.findByUserId(followerId)).willReturn(followerSummary);
-      given(userSummaryQueryRepositoryImpl.findByUserId(followeeId)).willReturn(followeeSummary);
+      given(userSummaryQueryRepository.findByUserId(followerId)).willReturn(followerSummary);
+      given(userSummaryQueryRepository.findByUserId(followeeId)).willReturn(followeeSummary);
 
       given(followRepository.existsByFollowerIdAndFolloweeId(followerId, followeeId))
           .willReturn(false);
@@ -269,8 +275,8 @@ class FollowServiceTest {
 
       given(followRepository.save(any(Follow.class)))
           .willAnswer(inv -> inv.getArgument(0));
-      given(userSummaryQueryRepositoryImpl.findByUserId(followerId)).willReturn(followerSummary);
-      given(userSummaryQueryRepositoryImpl.findByUserId(followeeId)).willReturn(followeeSummary);
+      given(userSummaryQueryRepository.findByUserId(followerId)).willReturn(followerSummary);
+      given(userSummaryQueryRepository.findByUserId(followeeId)).willReturn(followeeSummary);
       given(followMapper.toDto(any(Follow.class), eq(followerSummary), eq(followeeSummary)))
           .willReturn(expected);
 
@@ -299,8 +305,8 @@ class FollowServiceTest {
 
       UserSummary followerSummary = fm.giveMeBuilder(UserSummary.class)
           .set("userId", followerId).sample();
-      given(userSummaryQueryRepositoryImpl.findByUserId(followerId)).willReturn(followerSummary);
-      given(userSummaryQueryRepositoryImpl.findByUserId(followeeId))
+      given(userSummaryQueryRepository.findByUserId(followerId)).willReturn(followerSummary);
+      given(userSummaryQueryRepository.findByUserId(followeeId))
           .willThrow(UserNotFoundException.withNone());
 
       // when & then
@@ -368,7 +374,7 @@ class FollowServiceTest {
       // given
       UUID userId = UUID.randomUUID();
       UUID me = UUID.randomUUID();
-      given(userSummaryQueryRepositoryImpl.existsByUserId(userId)).willReturn(false);
+      given(userSummaryQueryRepository.existsByUserId(userId)).willReturn(false);
 
       // when & then
       assertThatThrownBy(() -> followService.getSummary(userId, me))
@@ -383,7 +389,7 @@ class FollowServiceTest {
       UUID me = UUID.randomUUID();
       UUID followId = UUID.randomUUID();
 
-      given(userSummaryQueryRepositoryImpl.existsByUserId(userId)).willReturn(true);
+      given(userSummaryQueryRepository.existsByUserId(userId)).willReturn(true);
 
       Follow follow = mock(Follow.class);
       given(follow.getId()).willReturn(followId);
@@ -403,7 +409,7 @@ class FollowServiceTest {
 
       // then
       assertThat(result).isEqualTo(expected);
-      verify(userSummaryQueryRepositoryImpl).existsByUserId(userId);
+      verify(userSummaryQueryRepository).existsByUserId(userId);
     }
 
     @Test
@@ -413,7 +419,7 @@ class FollowServiceTest {
       UUID userId = UUID.randomUUID();
       UUID me = UUID.randomUUID();
 
-      given(userSummaryQueryRepositoryImpl.existsByUserId(userId)).willReturn(true);
+      given(userSummaryQueryRepository.existsByUserId(userId)).willReturn(true);
 
       given(followRepository.countByFolloweeId(userId)).willReturn(0L);
       given(followRepository.countByFollowerId(userId)).willReturn(0L);
@@ -441,7 +447,7 @@ class FollowServiceTest {
       UUID userId = UUID.randomUUID();
       UUID me = UUID.randomUUID();
 
-      given(userSummaryQueryRepositoryImpl.existsByUserId(userId)).willReturn(true);
+      given(userSummaryQueryRepository.existsByUserId(userId)).willReturn(true);
 
       given(followRepository.countByFolloweeId(userId)).willReturn(0L);
       given(followRepository.countByFollowerId(userId)).willReturn(0L);
@@ -459,6 +465,154 @@ class FollowServiceTest {
       // then
       assertThat(result).isEqualTo(expected);
       assertThat(result.followingMe()).isTrue();
+    }
+  }
+
+  @Nested
+  @DisplayName("팔로잉 조회")
+  class GetFollowings {
+
+    @Test
+    @DisplayName("리포 결과를 배치 조회·매핑해 FollowDto 페이지로 반환한다")
+    void 리포_결과를_배치_조회_매핑해_FollowDto_페이지로_반환한다() {
+      // given
+      UUID followerId = UUID.randomUUID();
+      UUID followeeId = UUID.randomUUID();
+      Follow follow = Follow.create(followerId, followeeId);
+      CursorPageResponse<Follow> repoPage = new CursorPageResponse<>(
+          List.of(follow), "cursor", follow.getId(), false, 1L, "createdAt",
+          SortDirection.DESCENDING);
+
+      UserSummary followerSummary = fm.giveMeBuilder(UserSummary.class)
+          .set("userId", followerId).sample();
+      UserSummary followeeSummary = fm.giveMeBuilder(UserSummary.class)
+          .set("userId", followeeId).sample();
+      FollowDto dto = new FollowDto(follow.getId(), followeeSummary, followerSummary);
+
+      FollowingListParams params = fm.giveMeBuilder(FollowingListParams.class)
+          .set("followerId", followerId)
+          .set("limit", 10)
+          .set("cursor", null)
+          .set("idAfter", null)
+          .sample();
+      given(followRepository.findFollowings(params)).willReturn(repoPage);
+      given(userSummaryQueryRepository.findByUserIds(any()))
+          .willReturn(List.of(followerSummary, followeeSummary));
+      given(followMapper.toDto(follow, followerSummary, followeeSummary)).willReturn(dto);
+
+      // when
+      CursorPageResponse<FollowDto> result = followService.getFollowings(params);
+
+      // then
+      assertThat(result.data()).containsExactly(dto);
+      assertThat(result.totalCount()).isEqualTo(1L);
+      assertThat(result.hasNext()).isFalse();
+      assertThat(result.nextCursor()).isEqualTo("cursor");
+      assertThat(result.nextIdAfter()).isEqualTo(follow.getId());
+      assertThat(result.sortBy()).isEqualTo("createdAt");
+      assertThat(result.sortDirection()).isEqualTo(SortDirection.DESCENDING);
+
+      ArgumentCaptor<Collection<UUID>> idsCaptor = ArgumentCaptor.forClass(Collection.class);
+      verify(userSummaryQueryRepository).findByUserIds(idsCaptor.capture());
+      assertThat(idsCaptor.getValue()).contains(followerId, followeeId);
+      verify(userSummaryQueryRepository, never()).findByUserId(any());
+    }
+
+    @Test
+    @DisplayName("결과가 없으면 빈 데이터 페이지를 반환하고 배치 조회를 하지 않는다")
+    void 결과가_없으면_빈_데이터_페이지를_반환하고_배치_조회를_하지_않는다() {
+      // given
+      FollowingListParams params = fm.giveMeBuilder(FollowingListParams.class)
+          .set("followerId", UUID.randomUUID())
+          .set("limit", 10)
+          .set("cursor", null)
+          .set("idAfter", null)
+          .sample();
+      CursorPageResponse<Follow> emptyPage = new CursorPageResponse<>(
+          List.of(), null, null, false, 0L, "createdAt", SortDirection.DESCENDING);
+      given(followRepository.findFollowings(params)).willReturn(emptyPage);
+
+      // when
+      CursorPageResponse<FollowDto> result = followService.getFollowings(params);
+
+      // then
+      assertThat(result.data()).isEmpty();
+      assertThat(result.totalCount()).isEqualTo(0L);
+      verify(userSummaryQueryRepository, never()).findByUserIds(any());
+    }
+  }
+
+  @Nested
+  @DisplayName("팔로워 조회")
+  class GetFollowers {
+
+    @Test
+    @DisplayName("리포 결과를 배치 조회·매핑해 FollowDto 페이지로 반환한다")
+    void 리포_결과를_배치_조회_매핑해_FollowDto_페이지로_반환한다() {
+      // given
+      UUID followerId = UUID.randomUUID();
+      UUID followeeId = UUID.randomUUID();
+      Follow follow = Follow.create(followerId, followeeId);
+      CursorPageResponse<Follow> repoPage = new CursorPageResponse<>(
+          List.of(follow), "cursor", follow.getId(), false, 1L, "createdAt",
+          SortDirection.DESCENDING);
+
+      UserSummary followerSummary = fm.giveMeBuilder(UserSummary.class)
+          .set("userId", followerId).sample();
+      UserSummary followeeSummary = fm.giveMeBuilder(UserSummary.class)
+          .set("userId", followeeId).sample();
+      FollowDto dto = new FollowDto(follow.getId(), followeeSummary, followerSummary);
+
+      FollowerListParams params = fm.giveMeBuilder(FollowerListParams.class)
+          .set("followeeId", followeeId)
+          .set("limit", 10)
+          .set("cursor", null)
+          .set("idAfter", null)
+          .sample();
+      given(followRepository.findFollowers(params)).willReturn(repoPage);
+      given(userSummaryQueryRepository.findByUserIds(any()))
+          .willReturn(List.of(followerSummary, followeeSummary));
+      given(followMapper.toDto(follow, followerSummary, followeeSummary)).willReturn(dto);
+
+      // when
+      CursorPageResponse<FollowDto> result = followService.getFollowers(params);
+
+      // then
+      assertThat(result.data()).containsExactly(dto);
+      assertThat(result.totalCount()).isEqualTo(1L);
+      assertThat(result.hasNext()).isFalse();
+      assertThat(result.nextCursor()).isEqualTo("cursor");
+      assertThat(result.nextIdAfter()).isEqualTo(follow.getId());
+      assertThat(result.sortBy()).isEqualTo("createdAt");
+      assertThat(result.sortDirection()).isEqualTo(SortDirection.DESCENDING);
+
+      ArgumentCaptor<Collection<UUID>> idsCaptor = ArgumentCaptor.forClass(Collection.class);
+      verify(userSummaryQueryRepository).findByUserIds(idsCaptor.capture());
+      assertThat(idsCaptor.getValue()).contains(followerId, followeeId);
+      verify(userSummaryQueryRepository, never()).findByUserId(any());
+    }
+
+    @Test
+    @DisplayName("결과가 없으면 빈 데이터 페이지를 반환하고 배치 조회를 하지 않는다")
+    void 결과가_없으면_빈_데이터_페이지를_반환하고_배치_조회를_하지_않는다() {
+      // given
+      FollowerListParams params = fm.giveMeBuilder(FollowerListParams.class)
+          .set("followeeId", UUID.randomUUID())
+          .set("limit", 10)
+          .set("cursor", null)
+          .set("idAfter", null)
+          .sample();
+      CursorPageResponse<Follow> emptyPage = new CursorPageResponse<>(
+          List.of(), null, null, false, 0L, "createdAt", SortDirection.DESCENDING);
+      given(followRepository.findFollowers(params)).willReturn(emptyPage);
+
+      // when
+      CursorPageResponse<FollowDto> result = followService.getFollowers(params);
+
+      // then
+      assertThat(result.data()).isEmpty();
+      assertThat(result.totalCount()).isEqualTo(0L);
+      verify(userSummaryQueryRepository, never()).findByUserIds(any());
     }
   }
 }
