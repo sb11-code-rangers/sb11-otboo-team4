@@ -8,8 +8,10 @@ import com.sprint.mission.otboo.domain.social.feed.dto.FeedListParams;
 import com.sprint.mission.otboo.domain.social.feed.dto.OotdSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.dto.WeatherSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.entity.Feed;
+import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
 import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
+import com.sprint.mission.otboo.domain.social.feed.repository.FeedLikeRepository;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedRepository;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import java.util.List;
@@ -33,6 +35,7 @@ public class FeedService {
   private final FeedMapper feedMapper;
   private final WeatherSnapshotProvider weatherSnapshotProvider;
   private final OotdSnapshotProvider ootdSnapshotProvider;
+  private final FeedLikeRepository feedLikeRepository;
 
   @Transactional
   public FeedDto create(FeedCreateRequest request, UUID currentUserId) {
@@ -81,5 +84,8 @@ public class FeedService {
 
   @Transactional
   public void like(UUID feedId, UUID currentUserId) {
+    feedLikeRepository.save(FeedLike.create(feedId, currentUserId));
+    feedRepository.incrementLikeCount(feedId);
+    log.info("피드 좋아요 완료: feedId={}", feedId);
   }
 }
