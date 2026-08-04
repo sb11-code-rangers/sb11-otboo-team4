@@ -8,6 +8,7 @@ import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.SkyStatus;
 import com.sprint.mission.otboo.global.config.JpaConfig;
 import com.sprint.mission.otboo.global.config.QuerydslConfig;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +47,14 @@ class FeedRepositoryTest {
     testEntityManager.getEntityManager()
         .createNativeQuery("update feeds set like_count = :count where id = :id")
         .setParameter("count", count)
+        .setParameter("id", feedId)
+        .executeUpdate();
+  }
+
+  private void setDeletedAt(UUID feedId, Instant deletedAt) {
+    testEntityManager.getEntityManager()
+        .createNativeQuery("update feeds set deleted_at = :deletedAt where id = :id")
+        .setParameter("deletedAt", deletedAt)
         .setParameter("id", feedId)
         .executeUpdate();
   }
@@ -101,6 +110,48 @@ class FeedRepositoryTest {
       // then
       Feed found = feedRepository.findById(feed.getId()).orElseThrow();
       assertThat(found.getLikeCount()).isEqualTo(0L);
+    }
+  }
+
+  @Nested
+  @DisplayName("existsByIdAndSoftDeletable_DeletedAtIsNull")
+  class ExistsByIdAndSoftDeletableDeletedAtIsNull {
+
+    @Test
+    @DisplayName("삭제되지 않은 피드가 있으면 true를 반환한다")
+    void 삭제되지_않은_피드가_있으면_true를_반환한다() {
+      // given
+      Feed feed = createAndSaveFeed("내용");
+
+      // when
+      boolean exists = feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feed.getId());
+
+      // then
+      assertThat(exists).isTrue();
+    }
+
+    @Test
+    @DisplayName("피드가 없으면 false를 반환한다")
+    void 피드가_없으면_false를_반환한다() {
+      // when
+      boolean exists = feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(UUID.randomUUID());
+
+      // then
+      assertThat(exists).isFalse();
+    }
+
+    @Test
+    @DisplayName("소프트 삭제된 피드는 false를 반환한다")
+    void 소프트_삭제된_피드는_false를_반환한다() {
+      // given
+      Feed feed = createAndSaveFeed("내용");
+      setDeletedAt(feed.getId(), Instant.now());
+
+      // when
+      boolean exists = feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feed.getId());
+
+      // then
+      assertThat(exists).isFalse();
     }
   }
 }
