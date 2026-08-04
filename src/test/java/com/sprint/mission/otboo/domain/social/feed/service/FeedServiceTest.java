@@ -556,4 +556,26 @@ class FeedServiceTest {
           .isInstanceOf(FeedNotFoundException.class);
     }
   }
+
+  @Nested
+  @DisplayName("피드 좋아요 취소")
+  class Unlike {
+
+    @Test
+    @DisplayName("피드가 존재하고 좋아요가 있었으면 삭제하고 카운트를 감소시킨다")
+    void 피드가_존재하고_좋아요가_있었으면_삭제하고_카운트를_감소시킨다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
+      given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(1L);
+
+      // when
+      feedService.unlike(feedId, userId);
+
+      // then
+      verify(feedLikeRepository).deleteByFeedIdAndUserId(feedId, userId);
+      verify(feedRepository).decrementLikeCount(feedId);
+    }
+  }
 }

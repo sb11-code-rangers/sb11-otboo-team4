@@ -108,6 +108,10 @@ public class FeedService {
     log.info("피드 좋아요 완료: feedId={}", feedId);
   }
 
+  @Transactional
+  public void unlike(UUID feedId, UUID currentUserId) {
+  }
+
   private boolean isUniqueViolation(DataIntegrityViolationException e) {
     return e.getCause() instanceof ConstraintViolationException cve
         && UQ_FEED_LIKES.equalsIgnoreCase(cve.getConstraintName());
