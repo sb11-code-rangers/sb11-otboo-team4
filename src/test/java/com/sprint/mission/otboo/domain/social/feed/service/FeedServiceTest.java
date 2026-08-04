@@ -567,7 +567,6 @@ class FeedServiceTest {
       // given
       UUID feedId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
-      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
       given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(1L);
 
       // when

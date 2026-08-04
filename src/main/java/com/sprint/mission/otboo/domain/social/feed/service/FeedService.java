@@ -110,6 +110,10 @@ public class FeedService {
 
   @Transactional
   public void unlike(UUID feedId, UUID currentUserId) {
+    if (feedLikeRepository.deleteByFeedIdAndUserId(feedId, currentUserId) > 0) {
+      feedRepository.decrementLikeCount(feedId);
+      log.info("피드 좋아요 취소 완료: feedId={}", feedId);
+    }
   }
 
   private boolean isUniqueViolation(DataIntegrityViolationException e) {
