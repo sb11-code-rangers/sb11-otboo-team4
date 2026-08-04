@@ -51,7 +51,8 @@ class FeedRepositoryTest {
   }
 
   @Nested
-  class LikeCounter {
+  @DisplayName("incrementLikeCount")
+  class IncrementLikeCount {
 
     @Test
     @DisplayName("좋아요 카운트를 1 증가시킨다")
@@ -66,6 +67,11 @@ class FeedRepositoryTest {
       Feed found = feedRepository.findById(feed.getId()).orElseThrow();
       assertThat(found.getLikeCount()).isEqualTo(1L);
     }
+  }
+
+  @Nested
+  @DisplayName("decrementLikeCount")
+  class DecrementLikeCount {
 
     @Test
     @DisplayName("좋아요 카운트를 1 감소시킨다")

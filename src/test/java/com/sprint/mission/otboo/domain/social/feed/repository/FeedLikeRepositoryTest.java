@@ -28,6 +28,7 @@ class FeedLikeRepositoryTest {
   private FeedLikeRepository feedLikeRepository;
 
   @Nested
+  @DisplayName("existsByFeedIdAndUserId")
   class ExistsByFeedIdAndUserId {
 
     @Test
@@ -61,6 +62,7 @@ class FeedLikeRepositoryTest {
   }
 
   @Nested
+  @DisplayName("deleteByFeedIdAndUserId")
   class DeleteByFeedIdAndUserId {
 
     @Test
@@ -94,6 +96,7 @@ class FeedLikeRepositoryTest {
   }
 
   @Nested
+  @DisplayName("복합 유니크 제약")
   class UniqueConstraint {
 
     @Test
