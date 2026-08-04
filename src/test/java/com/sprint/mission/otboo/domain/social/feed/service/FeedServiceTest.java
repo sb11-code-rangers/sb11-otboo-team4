@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.social.feed.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -39,6 +40,7 @@ import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import java.util.List;
 import java.util.UUID;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
@@ -493,6 +496,24 @@ class FeedServiceTest {
 
       // then
       verify(feedLikeRepository, never()).save(any());
+      verify(feedRepository, never()).incrementLikeCount(any());
+    }
+
+    @Test
+    @DisplayName("저장 중 동시 좋아요로 UQ 위반이 나면 예외를 삼키고 카운트를 증가시키지 않는다")
+    void 저장_중_동시_좋아요로_UQ_위반이_나면_예외를_삼키고_카운트를_증가시키지_않는다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
+
+      ConstraintViolationException cause =
+          new ConstraintViolationException("UQ 위반", null, "UQ_feed_likes_feed_id_user_id");
+      given(feedLikeRepository.save(any()))
+          .willThrow(new DataIntegrityViolationException("UQ 위반", cause));
+
+      // when & then
+      assertThatCode(() -> feedService.like(feedId, userId)).doesNotThrowAnyException();
       verify(feedRepository, never()).incrementLikeCount(any());
     }
   }
