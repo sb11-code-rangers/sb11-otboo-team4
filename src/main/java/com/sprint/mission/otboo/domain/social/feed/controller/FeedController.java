@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,5 +56,12 @@ public class FeedController implements FeedApi {
       @CurrentUser UserPrincipal principal) {
     feedService.like(feedId, principal.userId());
     return ResponseEntity.noContent().build();
+  }
+
+  @DeleteMapping("/{feedId}/like")
+  public ResponseEntity<Void> unlikeFeed(
+      @PathVariable UUID feedId,
+      @CurrentUser UserPrincipal principal) {
+    return null;
   }
 }

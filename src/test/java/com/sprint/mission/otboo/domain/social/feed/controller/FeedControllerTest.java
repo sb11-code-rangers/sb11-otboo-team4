@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -221,6 +222,26 @@ class FeedControllerTest {
           .andExpect(status().isNoContent());
 
       verify(feedService).like(feedId, currentUserId);
+    }
+  }
+
+  @Nested
+  @DisplayName("피드 좋아요 취소 - DELETE /api/feeds/{feedId}/like")
+  class UnlikeFeed {
+
+    @Test
+    @DisplayName("정상 요청이면 204를 반환하고 인증 사용자로 좋아요 취소를 위임한다")
+    void 정상_요청이면_204를_반환하고_인증_사용자로_좋아요_취소를_위임한다() throws Exception {
+      // given
+      UUID currentUserId = UUID.randomUUID();
+      UUID feedId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(currentUserId));
+
+      // when & then
+      mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId))
+          .andExpect(status().isNoContent());
+
+      verify(feedService).unlike(feedId, currentUserId);
     }
   }
 }
