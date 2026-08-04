@@ -3,6 +3,7 @@ package com.sprint.mission.otboo.domain.social.feed.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -18,6 +19,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.FeedCreateRequest;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedDto;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedListParams;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedSortBy;
+import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.service.FeedService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
@@ -223,6 +225,21 @@ class FeedControllerTest {
 
       verify(feedService).like(feedId, currentUserId);
     }
+
+    @Test
+    @DisplayName("피드가 존재하지 않으면 404를 반환한다")
+    void 피드가_존재하지_않으면_404를_반환한다() throws Exception {
+      // given
+      UUID currentUserId = UUID.randomUUID();
+      UUID feedId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(currentUserId));
+      willThrow(FeedNotFoundException.withId(feedId))
+          .given(feedService).like(feedId, currentUserId);
+
+      // when & then
+      mockMvc.perform(post("/api/feeds/{feedId}/like", feedId))
+          .andExpect(status().isNotFound());
+    }
   }
 
   @Nested
@@ -242,6 +259,21 @@ class FeedControllerTest {
           .andExpect(status().isNoContent());
 
       verify(feedService).unlike(feedId, currentUserId);
+    }
+
+    @Test
+    @DisplayName("피드가 존재하지 않으면 404를 반환한다")
+    void 피드가_존재하지_않으면_404를_반환한다() throws Exception {
+      // given
+      UUID currentUserId = UUID.randomUUID();
+      UUID feedId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(currentUserId));
+      willThrow(FeedNotFoundException.withId(feedId))
+          .given(feedService).unlike(feedId, currentUserId);
+
+      // when & then
+      mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId))
+          .andExpect(status().isNotFound());
     }
   }
 }
