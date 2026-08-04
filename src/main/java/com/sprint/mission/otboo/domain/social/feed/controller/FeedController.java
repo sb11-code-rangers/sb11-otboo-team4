@@ -62,6 +62,7 @@ public class FeedController implements FeedApi {
   public ResponseEntity<Void> unlikeFeed(
       @PathVariable UUID feedId,
       @CurrentUser UserPrincipal principal) {
-    return null;
+    feedService.unlike(feedId, principal.userId());
+    return ResponseEntity.noContent().build();
   }
 }
