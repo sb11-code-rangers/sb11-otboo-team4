@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -18,7 +19,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "feed_likes")
+@Table(
+    name = "feed_likes",
+    uniqueConstraints = @UniqueConstraint(
+        name = "UQ_feed_likes_feed_id_user_id",
+        columnNames = {"feed_id", "user_id"}
+    )
+)
 @Entity
 public class FeedLike {
 
