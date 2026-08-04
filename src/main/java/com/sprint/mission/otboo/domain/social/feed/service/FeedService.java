@@ -84,6 +84,9 @@ public class FeedService {
 
   @Transactional
   public void like(UUID feedId, UUID currentUserId) {
+    if (feedLikeRepository.existsByFeedIdAndUserId(feedId, currentUserId)) {
+      return;
+    }
     feedLikeRepository.save(FeedLike.create(feedId, currentUserId));
     feedRepository.incrementLikeCount(feedId);
     log.info("피드 좋아요 완료: feedId={}", feedId);
