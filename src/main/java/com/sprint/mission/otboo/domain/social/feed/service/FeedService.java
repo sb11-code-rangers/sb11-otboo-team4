@@ -21,6 +21,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Service
 public class FeedService {
+
+  private static final String UQ_FEED_LIKES = "uq_feed_likes_feed_id_user_id";
 
   private final FeedRepository feedRepository;
   private final UserSummaryQueryRepository userSummaryQueryRepository;
@@ -87,8 +91,21 @@ public class FeedService {
     if (feedLikeRepository.existsByFeedIdAndUserId(feedId, currentUserId)) {
       return;
     }
-    feedLikeRepository.save(FeedLike.create(feedId, currentUserId));
+    try {
+      feedLikeRepository.save(FeedLike.create(feedId, currentUserId));
+    } catch (DataIntegrityViolationException e) {
+      if (isUniqueViolation(e)) {
+        log.warn("피드 좋아요 중 동시성 충돌 발생 (무시)");
+        return;
+      }
+      throw e;
+    }
     feedRepository.incrementLikeCount(feedId);
     log.info("피드 좋아요 완료: feedId={}", feedId);
+  }
+
+  private boolean isUniqueViolation(DataIntegrityViolationException e) {
+    return e.getCause() instanceof ConstraintViolationException cve
+        && UQ_FEED_LIKES.equalsIgnoreCase(cve.getConstraintName());
   }
 }
