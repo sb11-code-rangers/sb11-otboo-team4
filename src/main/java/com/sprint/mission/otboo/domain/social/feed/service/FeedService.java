@@ -78,4 +78,8 @@ public class FeedService {
         data, page.nextCursor(), page.nextIdAfter(), page.hasNext(),
         page.totalCount(), page.sortBy(), page.sortDirection());
   }
+
+  @Transactional
+  public void like(UUID feedId, UUID currentUserId) {
+  }
 }

@@ -23,9 +23,11 @@ import com.sprint.mission.otboo.domain.social.feed.dto.OotdDto;
 import com.sprint.mission.otboo.domain.social.feed.dto.OotdSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.dto.WeatherSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.entity.Feed;
+import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
 import com.sprint.mission.otboo.domain.social.feed.exception.WeatherNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
+import com.sprint.mission.otboo.domain.social.feed.repository.FeedLikeRepository;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedRepository;
 import com.sprint.mission.otboo.domain.weathernotification.weather.dto.PrecipitationDto;
 import com.sprint.mission.otboo.domain.weathernotification.weather.dto.TemperatureDto;
@@ -76,6 +78,9 @@ class FeedServiceTest {
 
   @Mock
   OotdSnapshotProvider ootdSnapshotProvider;
+
+  @Mock
+  FeedLikeRepository feedLikeRepository;
 
   @Nested
   @DisplayName("피드 등록")
@@ -449,6 +454,29 @@ class FeedServiceTest {
       // then
       verify(userSummaryQueryRepository).findByUserIds(anyList());
       assertThat(result.data()).containsExactly(dto1, dto2);
+    }
+  }
+
+  @Nested
+  @DisplayName("피드 좋아요")
+  class Like {
+
+    @Test
+    @DisplayName("피드가 존재하고 아직 좋아요하지 않았으면 좋아요를 저장하고 카운트를 증가시킨다")
+    void 피드가_존재하고_아직_좋아요하지_않았으면_좋아요를_저장하고_카운트를_증가시킨다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+
+      // when
+      feedService.like(feedId, userId);
+
+      // then
+      ArgumentCaptor<FeedLike> captor = ArgumentCaptor.forClass(FeedLike.class);
+      verify(feedLikeRepository).save(captor.capture());
+      assertThat(captor.getValue().getFeedId()).isEqualTo(feedId);
+      assertThat(captor.getValue().getUserId()).isEqualTo(userId);
+      verify(feedRepository).incrementLikeCount(feedId);
     }
   }
 }
