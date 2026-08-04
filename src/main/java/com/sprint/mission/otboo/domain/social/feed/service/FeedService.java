@@ -10,6 +10,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.WeatherSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.entity.Feed;
 import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
+import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedLikeRepository;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedRepository;
@@ -88,6 +89,9 @@ public class FeedService {
 
   @Transactional
   public void like(UUID feedId, UUID currentUserId) {
+    if (!feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)) {
+      throw FeedNotFoundException.withId(feedId);
+    }
     if (feedLikeRepository.existsByFeedIdAndUserId(feedId, currentUserId)) {
       return;
     }
@@ -95,7 +99,7 @@ public class FeedService {
       feedLikeRepository.save(FeedLike.create(feedId, currentUserId));
     } catch (DataIntegrityViolationException e) {
       if (isUniqueViolation(e)) {
-        log.warn("피드 좋아요 중 동시성 충돌 발생 (무시)");
+        log.warn("피드 좋아요 중 동시성 충돌 발생: feedId={}", feedId);
         return;
       }
       throw e;

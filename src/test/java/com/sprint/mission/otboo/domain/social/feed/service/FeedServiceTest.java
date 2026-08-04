@@ -472,6 +472,8 @@ class FeedServiceTest {
       // given
       UUID feedId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
+      given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
 
       // when
       feedService.like(feedId, userId);
@@ -490,6 +492,7 @@ class FeedServiceTest {
       // given
       UUID feedId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
       given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(true);
 
       // when
@@ -506,6 +509,7 @@ class FeedServiceTest {
       // given
       UUID feedId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
       given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
 
       ConstraintViolationException cause =
@@ -524,6 +528,7 @@ class FeedServiceTest {
       // given
       UUID feedId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
       given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
 
       // 원인 제약명이 UQ_feed_likes_feed_id_user_id 가 아닌 다른 제약
