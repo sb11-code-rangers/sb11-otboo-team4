@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -477,6 +478,23 @@ class FeedServiceTest {
       assertThat(captor.getValue().getFeedId()).isEqualTo(feedId);
       assertThat(captor.getValue().getUserId()).isEqualTo(userId);
       verify(feedRepository).incrementLikeCount(feedId);
+    }
+
+    @Test
+    @DisplayName("이미 좋아요한 상태면 저장과 카운트 증가를 하지 않는다")
+    void 이미_좋아요한_상태면_저장과_카운트_증가를_하지_않는다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
+      given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(true);
+
+      // when
+      feedService.like(feedId, userId);
+
+      // then
+      verify(feedLikeRepository, never()).save(any());
+      verify(feedRepository, never()).incrementLikeCount(any());
     }
   }
 }
