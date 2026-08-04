@@ -57,4 +57,37 @@ class FeedLikeRepositoryTest {
       assertThat(exists).isFalse();
     }
   }
+
+  @Nested
+  class DeleteByFeedIdAndUserId {
+
+    @Test
+    @DisplayName("좋아요가 있으면 삭제하고 삭제된 행 수 1을 반환한다")
+    void 좋아요가_있으면_삭제하고_삭제된_행_수_1을_반환한다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      feedLikeRepository.save(FeedLike.create(feedId, userId));
+
+      // when
+      long deleted = feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId);
+
+      // then
+      assertThat(deleted).isEqualTo(1L);
+      assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).isFalse();
+    }
+
+    @Test
+    @DisplayName("좋아요가 없으면 아무것도 삭제하지 않고 0을 반환한다")
+    void 좋아요가_없으면_아무것도_삭제하지_않고_0을_반환한다() {
+      // given — 저장 없음
+
+      // when
+      long deleted = feedLikeRepository.deleteByFeedIdAndUserId(UUID.randomUUID(),
+          UUID.randomUUID());
+
+      // then
+      assertThat(deleted).isEqualTo(0L);
+    }
+  }
 }

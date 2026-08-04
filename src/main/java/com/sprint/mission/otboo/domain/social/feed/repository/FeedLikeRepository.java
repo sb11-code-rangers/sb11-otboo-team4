@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface FeedLikeRepository extends JpaRepository<FeedLike, UUID> {
 
   boolean existsByFeedIdAndUserId(UUID feedId, UUID userId);
+
+  long deleteByFeedIdAndUserId(UUID feedId, UUID userId);
 }
