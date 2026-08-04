@@ -27,6 +27,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.WeatherSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.entity.Feed;
 import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
+import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.exception.WeatherNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedLikeRepository;
@@ -535,6 +536,19 @@ class FeedServiceTest {
       assertThatThrownBy(() -> feedService.like(feedId, userId))
           .isInstanceOf(DataIntegrityViolationException.class);
       verify(feedRepository, never()).incrementLikeCount(any());
+    }
+
+    @Test
+    @DisplayName("피드가 존재하지 않으면 FeedNotFoundException을 던진다")
+    void 피드가_존재하지_않으면_FeedNotFoundException을_던진다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(false);
+
+      // when & then
+      assertThatThrownBy(() -> feedService.like(feedId, userId))
+          .isInstanceOf(FeedNotFoundException.class);
     }
   }
 }
