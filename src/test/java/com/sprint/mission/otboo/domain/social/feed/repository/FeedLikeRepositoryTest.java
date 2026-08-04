@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.social.feed.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
 import com.sprint.mission.otboo.global.config.JpaConfig;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -88,6 +90,24 @@ class FeedLikeRepositoryTest {
 
       // then
       assertThat(deleted).isEqualTo(0L);
+    }
+  }
+
+  @Nested
+  class UniqueConstraint {
+
+    @Test
+    @DisplayName("같은 피드에 같은 사용자가 중복 좋아요하면 DataIntegrityViolationException이 발생한다")
+    void 같은_피드에_같은_사용자가_중복_좋아요하면_DataIntegrityViolationException이_발생한다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      feedLikeRepository.saveAndFlush(FeedLike.create(feedId, userId));
+
+      // when & then
+      assertThatThrownBy(
+          () -> feedLikeRepository.saveAndFlush(FeedLike.create(feedId, userId)))
+          .isInstanceOf(DataIntegrityViolationException.class);
     }
   }
 }
