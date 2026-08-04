@@ -53,6 +53,7 @@ public class FeedController implements FeedApi {
   public ResponseEntity<Void> likeFeed(
       @PathVariable UUID feedId,
       @CurrentUser UserPrincipal principal) {
-    return null;
+    feedService.like(feedId, principal.userId());
+    return ResponseEntity.noContent().build();
   }
 }
