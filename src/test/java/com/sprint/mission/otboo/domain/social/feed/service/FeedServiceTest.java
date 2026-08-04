@@ -576,5 +576,20 @@ class FeedServiceTest {
       verify(feedLikeRepository).deleteByFeedIdAndUserId(feedId, userId);
       verify(feedRepository).decrementLikeCount(feedId);
     }
+
+    @Test
+    @DisplayName("좋아요가 없었으면 카운트를 감소시키지 않는다")
+    void 좋아요가_없었으면_카운트를_감소시키지_않는다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(0L);
+
+      // when
+      feedService.unlike(feedId, userId);
+
+      // then
+      verify(feedRepository, never()).decrementLikeCount(any());
+    }
   }
 }
