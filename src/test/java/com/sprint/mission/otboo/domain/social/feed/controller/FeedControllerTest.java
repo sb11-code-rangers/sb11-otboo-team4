@@ -203,4 +203,24 @@ class FeedControllerTest {
           .andExpect(status().isBadRequest());
     }
   }
+
+  @Nested
+  @DisplayName("피드 좋아요 - POST /api/feeds/{feedId}/like")
+  class LikeFeed {
+
+    @Test
+    @DisplayName("정상 요청이면 204를 반환하고 인증 사용자로 좋아요를 위임한다")
+    void 정상_요청이면_204를_반환하고_인증_사용자로_좋아요를_위임한다() throws Exception {
+      // given
+      UUID currentUserId = UUID.randomUUID();
+      UUID feedId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(currentUserId));
+
+      // when & then
+      mockMvc.perform(post("/api/feeds/{feedId}/like", feedId))
+          .andExpect(status().isNoContent());
+
+      verify(feedService).like(feedId, currentUserId);
+    }
+  }
 }
