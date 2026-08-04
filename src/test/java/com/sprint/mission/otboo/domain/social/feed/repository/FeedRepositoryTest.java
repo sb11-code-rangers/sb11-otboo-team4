@@ -81,5 +81,20 @@ class FeedRepositoryTest {
       Feed found = feedRepository.findById(feed.getId()).orElseThrow();
       assertThat(found.getLikeCount()).isEqualTo(1L);
     }
+
+    @Test
+    @DisplayName("좋아요 카운트가 0이면 감소시켜도 0을 유지한다")
+    void 좋아요_카운트가_0이면_감소시켜도_0을_유지한다() {
+      // given
+      Feed feed = createAndSaveFeed("내용");
+      // like_count는 생성 시 0
+
+      // when
+      feedRepository.decrementLikeCount(feed.getId());
+
+      // then
+      Feed found = feedRepository.findById(feed.getId()).orElseThrow();
+      assertThat(found.getLikeCount()).isEqualTo(0L);
+    }
   }
 }
