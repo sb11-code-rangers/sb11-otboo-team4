@@ -516,5 +516,25 @@ class FeedServiceTest {
       assertThatCode(() -> feedService.like(feedId, userId)).doesNotThrowAnyException();
       verify(feedRepository, never()).incrementLikeCount(any());
     }
+
+    @Test
+    @DisplayName("UQ가 아닌 제약 위반이면 삼키지 않고 전파한다")
+    void UQ가_아닌_제약_위반이면_삼키지_않고_전파한다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
+
+      // 원인 제약명이 UQ_feed_likes_feed_id_user_id 가 아닌 다른 제약
+      ConstraintViolationException cause =
+          new ConstraintViolationException("FK 위반", null, "FK_feeds_TO_feed_likes_1");
+      given(feedLikeRepository.save(any()))
+          .willThrow(new DataIntegrityViolationException("FK 위반", cause));
+
+      // when & then
+      assertThatThrownBy(() -> feedService.like(feedId, userId))
+          .isInstanceOf(DataIntegrityViolationException.class);
+      verify(feedRepository, never()).incrementLikeCount(any());
+    }
   }
 }
