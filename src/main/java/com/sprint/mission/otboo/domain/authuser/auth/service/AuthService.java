@@ -85,7 +85,7 @@ public class AuthService {
     } catch (LockedException e) {
       throw AccountLockedException.withEmail(request.username());
     } catch (AuthenticationException e) {
-      throw InvalidCredentialsException.withNone();
+      throw InvalidCredentialsException.withCause(e);
     }
   }
 

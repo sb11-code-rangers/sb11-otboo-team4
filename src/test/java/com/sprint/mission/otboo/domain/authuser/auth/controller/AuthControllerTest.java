@@ -82,6 +82,11 @@ class AuthControllerTest {
   @MockitoBean
   private RefreshTokenCookieProvider refreshTokenCookieProvider;
 
+  @AfterEach
+  void tearDown() {
+    SecurityContextHolder.clearContext();
+  }
+
   private Authentication authenticationOf(UUID userId) {
     UserPrincipal principal = new UserPrincipal(userId, "USER");
     return new UsernamePasswordAuthenticationToken(principal, null,
@@ -201,11 +206,6 @@ class AuthControllerTest {
   @Nested
   @DisplayName("로그아웃")
   class SignOut {
-
-    @AfterEach
-    void tearDown() {
-      SecurityContextHolder.clearContext();
-    }
 
     @Test
     @DisplayName("인증된 사용자가 로그아웃하면 204를 반환하고, 자신의 세션을 폐기한 뒤 리프레시 토큰 쿠키를 지운다")

@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -71,7 +72,6 @@ class AuthServiceTest {
       .plugin(new JakartaValidationPlugin())
       .build();
 
-  @InjectMocks
   AuthService authService;
   @Mock
   UserSessionRegistry mockUserSessionRegistry;
@@ -94,6 +94,22 @@ class AuthServiceTest {
   @Mock
   Clock mockClock;
 
+  @BeforeEach
+  void setUp() {
+    authService = new AuthService(
+        mockUserSessionRegistry,
+        mockTokenProvider,
+        mockAuthenticationManager,
+        authMapper,
+        mockUserRepository,
+        mockSseService,
+        mockTempPasswordGenerator,
+        mockTempPasswordRegistry,
+        mockEventPublisher,
+        mockClock
+    );
+  }
+
   private User fixtureUnlockedUser() {
     User user = entityFixtureMonkey.giveMeBuilder(User.class)
         .set("id", UUID.randomUUID())
@@ -105,6 +121,27 @@ class AuthServiceTest {
 
   private RefreshTokenClaims refreshClaims(UUID userId, UUID sid, UUID jti) {
     return new RefreshTokenClaims(userId, sid, jti);
+  }
+
+  /**
+   * 로그인 성공 시나리오에서 공통으로 필요한 스텁을 모은 헬퍼. 세션/토큰의 구체적인 값 자체를 검증하는 테스트(signIn_success_returnsSignInDto)는
+   * 정확한 인자 매칭이 필요해 이 헬퍼를 쓰지 않고 개별적으로 스텁한다.
+   */
+  private void stubSuccessfulSignIn(CustomUserDetails principal) {
+    Authentication authentication = mock(Authentication.class);
+    given(authentication.getPrincipal()).willReturn(principal);
+    given(mockAuthenticationManager.authenticate(any())).willReturn(authentication);
+    given(mockClock.instant()).willReturn(FIXED_NOW);
+
+    given(mockTokenProvider.getRefreshTokenTtl()).willReturn(Duration.ofDays(14));
+    given(mockUserSessionRegistry.issue(any(), any(), any()))
+        .willReturn(new UserSession(UUID.randomUUID(), UUID.randomUUID(), FIXED_NOW));
+    given(mockTokenProvider.createAccessToken(any(), any(), any(), any())).willReturn(
+        "access-token");
+    given(mockTokenProvider.getRefreshTokenExpiresAt(any())).willReturn(
+        FIXED_NOW.plus(14, ChronoUnit.DAYS));
+    given(mockTokenProvider.createRefreshToken(any(), any(), any(), any(), any())).willReturn(
+        "refresh-token");
   }
 
   @Nested
@@ -158,20 +195,7 @@ class AuthServiceTest {
       SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
       User user = User.create("홍길동", request.username(), "encoded-password");
       CustomUserDetails principal = new CustomUserDetails(user);
-
-      Authentication authentication = mock(Authentication.class);
-      given(authentication.getPrincipal()).willReturn(principal);
-      given(mockAuthenticationManager.authenticate(any())).willReturn(authentication);
-      given(mockClock.instant()).willReturn(FIXED_NOW);
-      given(mockTokenProvider.getRefreshTokenTtl()).willReturn(Duration.ofDays(14));
-      given(mockUserSessionRegistry.issue(any(), any(), any()))
-          .willReturn(new UserSession(UUID.randomUUID(), UUID.randomUUID(), FIXED_NOW));
-      given(mockTokenProvider.createAccessToken(any(), any(), any(), any())).willReturn(
-          "access-token");
-      given(mockTokenProvider.getRefreshTokenExpiresAt(any())).willReturn(
-          FIXED_NOW.plus(14, ChronoUnit.DAYS));
-      given(mockTokenProvider.createRefreshToken(any(), any(), any(), any(), any())).willReturn(
-          "refresh-token");
+      stubSuccessfulSignIn(principal);
 
       // when
       authService.signIn(request);
@@ -192,21 +216,7 @@ class AuthServiceTest {
       SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
       User user = User.create("홍길동", request.username(), "encoded-password");
       CustomUserDetails principal = new CustomUserDetails(user);
-
-      Authentication authentication = mock(Authentication.class);
-      given(authentication.getPrincipal()).willReturn(principal);
-      given(mockAuthenticationManager.authenticate(any())).willReturn(authentication);
-      given(mockClock.instant()).willReturn(FIXED_NOW);
-
-      UserSession issuedSession = new UserSession(UUID.randomUUID(), UUID.randomUUID(), FIXED_NOW);
-      given(mockTokenProvider.getRefreshTokenTtl()).willReturn(Duration.ofDays(14));
-      given(mockUserSessionRegistry.issue(any(), any(), any())).willReturn(issuedSession);
-      given(mockTokenProvider.createAccessToken(any(), any(), any(), any())).willReturn(
-          "access-token");
-      given(mockTokenProvider.getRefreshTokenExpiresAt(any())).willReturn(
-          FIXED_NOW.plus(14, ChronoUnit.DAYS));
-      given(mockTokenProvider.createRefreshToken(any(), any(), any(), any(), any())).willReturn(
-          "refresh-token");
+      stubSuccessfulSignIn(principal);
 
       // when
       authService.signIn(request);
@@ -225,21 +235,7 @@ class AuthServiceTest {
       SignInRequest request = fixtureMonkey.giveMeBuilder(SignInRequest.class).sample();
       User user = User.create("홍길동", request.username(), "encoded-password");
       CustomUserDetails principal = new CustomUserDetails(user);
-
-      Authentication authentication = mock(Authentication.class);
-      given(authentication.getPrincipal()).willReturn(principal);
-      given(mockAuthenticationManager.authenticate(any())).willReturn(authentication);
-      given(mockClock.instant()).willReturn(FIXED_NOW);
-
-      UserSession issuedSession = new UserSession(UUID.randomUUID(), UUID.randomUUID(), FIXED_NOW);
-      given(mockTokenProvider.getRefreshTokenTtl()).willReturn(Duration.ofDays(14));
-      given(mockUserSessionRegistry.issue(any(), any(), any())).willReturn(issuedSession);
-      given(mockTokenProvider.createAccessToken(any(), any(), any(), any())).willReturn(
-          "access-token");
-      given(mockTokenProvider.getRefreshTokenExpiresAt(any())).willReturn(
-          FIXED_NOW.plus(14, ChronoUnit.DAYS));
-      given(mockTokenProvider.createRefreshToken(any(), any(), any(), any(), any())).willReturn(
-          "refresh-token");
+      stubSuccessfulSignIn(principal);
 
       // when
       authService.signIn(request);
@@ -364,7 +360,7 @@ class AuthServiceTest {
       given(mockTokenProvider.getRefreshTokenTtl()).willReturn(Duration.ofDays(14));
       given(mockClock.instant()).willReturn(FIXED_NOW);
 
-      // 절대 만료 정책: 원래 로그인이 오래 전이라 issuedAt이 과거
+      // 절대 만료 정책: 원래 로그인이 오래 전이라 issuedAt(staleIssuedAt)이 FIXED_NOW와 다름 — access token은 이 과거 값이 아니라 FIXED_NOW로 발급돼야 한다
       Instant staleIssuedAt = FIXED_NOW.minus(10, ChronoUnit.DAYS);
       UserSession rotated = new UserSession(sid, UUID.randomUUID(), staleIssuedAt);
       given(mockUserSessionRegistry.rotate(any(), any(), any(), any())).willReturn(rotated);
@@ -380,7 +376,6 @@ class AuthServiceTest {
 
       // then — Clock을 주입받으므로 근사 비교(isCloseTo) 없이 정확히 검증 가능
       verify(mockTokenProvider).createAccessToken(any(), any(), any(), eq(FIXED_NOW));
-      assertThat(FIXED_NOW).isNotEqualTo(staleIssuedAt);
     }
 
     @Test
@@ -404,6 +399,8 @@ class AuthServiceTest {
           "new-access-token");
       given(mockTokenProvider.getRefreshTokenExpiresAt(any())).willReturn(
           FIXED_NOW.plus(14, ChronoUnit.DAYS));
+      given(mockTokenProvider.createRefreshToken(any(), any(), any(), any(), any())).willReturn(
+          "new-refresh-token");
 
       // when
       authService.refresh("refresh-token");
