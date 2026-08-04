@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
 import com.sprint.mission.otboo.global.config.JpaConfig;
 import com.sprint.mission.otboo.global.config.QuerydslConfig;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -111,6 +112,33 @@ class FeedLikeRepositoryTest {
       assertThatThrownBy(
           () -> feedLikeRepository.saveAndFlush(FeedLike.create(feedId, userId)))
           .isInstanceOf(DataIntegrityViolationException.class);
+    }
+  }
+
+  @Nested
+  @DisplayName("findLikedFeedIds")
+  class FindLikedFeedIds {
+
+    @Test
+    @DisplayName("주어진 피드들 중 해당 사용자가 좋아요한 피드 ID만 반환한다")
+    void 주어진_피드들_중_해당_사용자가_좋아요한_피드_ID만_반환한다() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UUID likedFeedId = UUID.randomUUID();
+      UUID notLikedFeedId = UUID.randomUUID();
+      UUID otherUserFeedId = UUID.randomUUID();
+
+      feedLikeRepository.save(FeedLike.create(likedFeedId, userId));
+      feedLikeRepository.save(FeedLike.create(otherUserFeedId, UUID.randomUUID())); // 다른 유저
+      feedLikeRepository.saveAndFlush(
+          FeedLike.create(notLikedFeedId, UUID.randomUUID())); // 또 다른 유저
+
+      // when
+      List<UUID> result = feedLikeRepository.findLikedFeedIds(
+          userId, List.of(likedFeedId, notLikedFeedId, otherUserFeedId));
+
+      // then
+      assertThat(result).containsExactly(likedFeedId);
     }
   }
 }
