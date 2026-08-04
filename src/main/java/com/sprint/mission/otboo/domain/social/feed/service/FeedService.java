@@ -110,6 +110,9 @@ public class FeedService {
 
   @Transactional
   public void unlike(UUID feedId, UUID currentUserId) {
+    if (!feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)) {
+      throw FeedNotFoundException.withId(feedId);
+    }
     if (feedLikeRepository.deleteByFeedIdAndUserId(feedId, currentUserId) > 0) {
       feedRepository.decrementLikeCount(feedId);
       log.info("피드 좋아요 취소 완료: feedId={}", feedId);
