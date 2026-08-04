@@ -13,4 +13,7 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedCustomRep
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("update Feed f set f.likeCount = f.likeCount + 1 where f.id = :feedId")
   void incrementLikeCount(@Param("feedId") UUID feedId);
+
+  default void decrementLikeCount(UUID feedId) {
+  }
 }

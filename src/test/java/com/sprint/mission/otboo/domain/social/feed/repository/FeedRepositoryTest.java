@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -33,9 +34,20 @@ class FeedRepositoryTest {
   @Autowired
   private FeedRepository feedRepository;
 
+  @Autowired
+  private TestEntityManager testEntityManager;
+
   private Feed createAndSaveFeed(String content) {
     return feedRepository.save(
         Feed.create(UUID.randomUUID(), UUID.randomUUID(), content, DUMMY_SNAPSHOT, List.of()));
+  }
+
+  private void setLikeCount(UUID feedId, long count) {
+    testEntityManager.getEntityManager()
+        .createNativeQuery("update feeds set like_count = :count where id = :id")
+        .setParameter("count", count)
+        .setParameter("id", feedId)
+        .executeUpdate();
   }
 
   @Nested
@@ -49,6 +61,21 @@ class FeedRepositoryTest {
 
       // when
       feedRepository.incrementLikeCount(feed.getId());
+
+      // then
+      Feed found = feedRepository.findById(feed.getId()).orElseThrow();
+      assertThat(found.getLikeCount()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("좋아요 카운트를 1 감소시킨다")
+    void 좋아요_카운트를_1_감소시킨다() {
+      // given
+      Feed feed = createAndSaveFeed("내용");
+      setLikeCount(feed.getId(), 2L);
+
+      // when
+      feedRepository.decrementLikeCount(feed.getId());
 
       // then
       Feed found = feedRepository.findById(feed.getId()).orElseThrow();
