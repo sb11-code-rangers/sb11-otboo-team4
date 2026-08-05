@@ -2,8 +2,8 @@ package com.sprint.mission.otboo.security.filter;
 
 import com.sprint.mission.otboo.security.details.UserPrincipal;
 import com.sprint.mission.otboo.security.token.dto.AccessTokenClaims;
-import com.sprint.mission.otboo.security.token.exception.ExpiredTokenException;
-import com.sprint.mission.otboo.security.token.exception.TokenException;
+import com.sprint.mission.otboo.security.token.exception.business.ExpiredTokenException;
+import com.sprint.mission.otboo.security.token.exception.business.TokenException;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import com.sprint.mission.otboo.security.usersession.exception.UserSessionException;
 import com.sprint.mission.otboo.security.usersession.exception.UserSessionExpiredException;

@@ -12,10 +12,11 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.sprint.mission.otboo.security.token.dto.AccessTokenClaims;
 import com.sprint.mission.otboo.security.token.dto.RefreshTokenClaims;
-import com.sprint.mission.otboo.security.token.exception.ExpiredTokenException;
-import com.sprint.mission.otboo.security.token.exception.InvalidAccessTokenException;
-import com.sprint.mission.otboo.security.token.exception.InvalidRefreshTokenException;
-import com.sprint.mission.otboo.security.token.exception.TokenException;
+import com.sprint.mission.otboo.security.token.exception.business.ExpiredTokenException;
+import com.sprint.mission.otboo.security.token.exception.business.InvalidAccessTokenException;
+import com.sprint.mission.otboo.security.token.exception.business.InvalidRefreshTokenException;
+import com.sprint.mission.otboo.security.token.exception.business.TokenException;
+import com.sprint.mission.otboo.security.token.exception.system.TokenProviderException;
 import com.sprint.mission.otboo.security.token.properties.TokenProperties;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import java.text.ParseException;
@@ -52,17 +53,19 @@ public class NimbusTokenProvider implements TokenProvider {
       this.refreshSigner = new MACSigner(refreshSecret);
       this.refreshVerifier = new MACVerifier(refreshSecret);
     } catch (JOSEException e) {
-      // 시스템 부팅 시에 발생할 예외 (비즈니스 예외 X)
-      throw new IllegalStateException("토큰 키 초기화 실패", e);
+      throw TokenProviderException.withMessageAndCause("토큰 키 초기화 실패", e);
+    } catch (IllegalArgumentException e) {
+      // Base64.getDecoder().decode()가 잘못된 base64 형식일 때 던짐
+      throw TokenProviderException.withMessageAndCause("토큰 시크릿 base64 디코딩 실패", e);
     }
   }
 
   @Override
-  public String createAccessToken(UUID userId, String role, UUID sessionId, Instant now) {
+  public String createAccessToken(UUID userId, UUID sessionId, String role, Instant now) {
     JWTClaimsSet claims = new JWTClaimsSet.Builder()
         .subject(userId.toString())
-        .claim("role", role)
         .claim("sid", sessionId.toString())
+        .claim("role", role)
         .issueTime(Date.from(now))
         .expirationTime(Date.from(now.plus(tokenProperties.accessTokenExpiration())))
         .build();
@@ -70,11 +73,11 @@ public class NimbusTokenProvider implements TokenProvider {
   }
 
   @Override
-  public String createRefreshToken(UUID userId, UUID jti, UUID sessionId, Instant now) {
+  public String createRefreshToken(UUID userId, UUID sessionId, UUID jti, Instant now) {
     JWTClaimsSet claims = new JWTClaimsSet.Builder()
         .subject(userId.toString())
-        .jwtID(jti.toString())
         .claim("sid", sessionId.toString())
+        .jwtID(jti.toString())
         .issueTime(Date.from(now))
         .expirationTime(Date.from(now.plus(tokenProperties.refreshTokenExpiration())))
         .build();
@@ -86,16 +89,20 @@ public class NimbusTokenProvider implements TokenProvider {
     JWTClaimsSet claims = verifyAndParse(token, Instant.now(clock), accessVerifier,
         InvalidAccessTokenException::withNone, InvalidAccessTokenException::withCause);
     try {
+      String subject = claims.getSubject();
+      String sid = claims.getStringClaim("sid");
       String role = claims.getStringClaim("role");
-      if (role == null || role.isBlank()) {
+
+      if (subject == null || sid == null || role == null || role.isBlank()) {
         throw InvalidAccessTokenException.withNone();
       }
+
       return new AccessTokenClaims(
-          UUID.fromString(claims.getSubject()),
-          role,
-          UUID.fromString(claims.getStringClaim("sid"))
+          UUID.fromString(subject),
+          UUID.fromString(sid),
+          role
       );
-    } catch (ParseException | IllegalArgumentException | NullPointerException e) {
+    } catch (ParseException | IllegalArgumentException e) {
       throw InvalidAccessTokenException.withCause(e);
     }
   }
@@ -105,12 +112,21 @@ public class NimbusTokenProvider implements TokenProvider {
     JWTClaimsSet claims = verifyAndParse(token, Instant.now(clock), refreshVerifier,
         InvalidRefreshTokenException::withNone, InvalidRefreshTokenException::withCause);
     try {
+
+      String subject = claims.getSubject();
+      String sid = claims.getStringClaim("sid");
+      String jti = claims.getJWTID();
+
+      if (subject == null || sid == null || jti == null) {
+        throw InvalidRefreshTokenException.withNone();
+      }
+
       return new RefreshTokenClaims(
-          UUID.fromString(claims.getSubject()),
-          UUID.fromString(claims.getStringClaim("sid")),
-          UUID.fromString(claims.getJWTID())
+          UUID.fromString(subject),
+          UUID.fromString(sid),
+          UUID.fromString(jti)
       );
-    } catch (ParseException | IllegalArgumentException | NullPointerException e) {
+    } catch (ParseException | IllegalArgumentException e) {
       throw InvalidRefreshTokenException.withCause(e);
     }
   }
@@ -121,8 +137,7 @@ public class NimbusTokenProvider implements TokenProvider {
       jwt.sign(signer);
       return jwt.serialize();
     } catch (JOSEException e) {
-      // 실제 시스템 운영 중 발생할 에러 (비즈니스 예외 X -> 서버 내부 장애로 취급이 맞을까?)
-      throw new IllegalStateException("토큰 서명 실패", e);
+      throw TokenProviderException.withMessageAndCause("토큰 서명 실패", e);
     }
   }
 

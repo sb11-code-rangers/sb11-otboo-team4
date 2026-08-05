@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.security.token.exception;
+package com.sprint.mission.otboo.security.token.exception.business;
 
 import com.sprint.mission.otboo.global.exception.OtbooException;
 import java.util.Map;
