@@ -28,7 +28,8 @@ public interface FeedApi {
       @ApiResponse(responseCode = "200", description = "피드 목록 조회 성공"),
       @ApiResponse(responseCode = "400", description = "피드 목록 조회 실패")
   })
-  ResponseEntity<CursorPageResponse<FeedDto>> getFeedList(FeedListParams params);
+  ResponseEntity<CursorPageResponse<FeedDto>> getFeedList(FeedListParams params,
+      UserPrincipal principal);
 
   @Operation(summary = "피드 좋아요", description = "피드 좋아요 API")
   @ApiResponses({

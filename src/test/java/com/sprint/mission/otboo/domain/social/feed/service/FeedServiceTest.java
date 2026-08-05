@@ -371,7 +371,7 @@ class FeedServiceTest {
       when(feedMapper.toDto(feed2, summary2, false)).thenReturn(dto2);
 
       // when
-      CursorPageResponse<FeedDto> result = feedService.getFeeds(params);
+      CursorPageResponse<FeedDto> result = feedService.getFeeds(params, UUID.randomUUID());
 
       // then
       assertThat(result.data()).containsExactly(dto1, dto2);
@@ -412,7 +412,7 @@ class FeedServiceTest {
       when(feedMapper.toDto(feed2, summary2, false)).thenReturn(dto2);
 
       // when
-      CursorPageResponse<FeedDto> result = feedService.getFeeds(params);
+      CursorPageResponse<FeedDto> result = feedService.getFeeds(params, UUID.randomUUID());
 
       // then
       assertThat(result.hasNext()).isFalse();
@@ -454,11 +454,50 @@ class FeedServiceTest {
       when(feedMapper.toDto(feed2, summary2, false)).thenReturn(dto2);
 
       // when
-      CursorPageResponse<FeedDto> result = feedService.getFeeds(params);
+      CursorPageResponse<FeedDto> result = feedService.getFeeds(params, UUID.randomUUID());
 
       // then
       verify(userSummaryQueryRepository).findByUserIds(anyList());
       assertThat(result.data()).containsExactly(dto1, dto2);
+    }
+
+    @Test
+    @DisplayName("내가 좋아요한 피드는 likedByMe=true로 반환한다")
+    void 내가_좋아요한_피드는_likedByMe_true로_반환한다() {
+      // given
+      UUID currentUserId = UUID.randomUUID();
+      FeedListParams params = new FeedListParams(
+          null, null, 2, FeedSortBy.CREATED_AT, SortDirection.DESCENDING, null, null);
+
+      UUID authorId = UUID.randomUUID();
+      UserSummary summary = new UserSummary(authorId, "유저", "img.png");
+
+      Feed likedFeed = Feed.create(authorId, UUID.randomUUID(), "좋아요한 피드", DUMMY_SNAPSHOT,
+          List.of());
+      Feed notLikedFeed = Feed.create(authorId, UUID.randomUUID(), "안 누른 피드", DUMMY_SNAPSHOT,
+          List.of());
+
+      CursorPageResponse<Feed> repoPage = new CursorPageResponse<>(
+          List.of(likedFeed, notLikedFeed), null, null, false, 2L,
+          "createdAt", SortDirection.DESCENDING);
+
+      FeedDto likedDto = new FeedDto(likedFeed.getId(), null, null, summary, null, null,
+          "좋아요한 피드", 0L, 0, true);
+      FeedDto notLikedDto = new FeedDto(notLikedFeed.getId(), null, null, summary, null, null,
+          "안 누른 피드", 0L, 0, false);
+
+      when(feedRepository.findFeeds(params)).thenReturn(repoPage);
+      when(userSummaryQueryRepository.findByUserIds(anyList())).thenReturn(List.of(summary));
+      when(feedLikeRepository.findLikedFeedIds(any(), any()))
+          .thenReturn(List.of(likedFeed.getId()));
+      when(feedMapper.toDto(likedFeed, summary, true)).thenReturn(likedDto);
+      when(feedMapper.toDto(notLikedFeed, summary, false)).thenReturn(notLikedDto);
+
+      // when
+      CursorPageResponse<FeedDto> result = feedService.getFeeds(params, currentUserId);
+
+      // then
+      assertThat(result.data()).containsExactly(likedDto, notLikedDto);
     }
   }
 

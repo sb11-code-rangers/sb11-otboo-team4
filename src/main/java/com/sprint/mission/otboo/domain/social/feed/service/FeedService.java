@@ -61,7 +61,7 @@ public class FeedService {
     return feedMapper.toDto(feed, author, false);
   }
 
-  public CursorPageResponse<FeedDto> getFeeds(FeedListParams params) {
+  public CursorPageResponse<FeedDto> getFeeds(FeedListParams params, UUID currentUserId) {
     CursorPageResponse<Feed> page = feedRepository.findFeeds(params);
 
     List<Feed> feeds = page.data();
