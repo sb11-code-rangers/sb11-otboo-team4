@@ -21,7 +21,7 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedCustomRep
 
   boolean existsByIdAndSoftDeletable_DeletedAtIsNull(UUID id);
 
-  default Optional<UUID> findAuthorId(UUID feedId) {
-    return Optional.empty();
-  }
+  @Query("select f.authorId from Feed f where f.id = :feedId")
+  Optional<UUID> findAuthorId(@Param("feedId") UUID feedId);
+  
 }
