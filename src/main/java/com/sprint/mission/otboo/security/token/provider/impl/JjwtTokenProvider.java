@@ -14,10 +14,9 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
 import java.util.function.Function;
@@ -47,20 +46,19 @@ public class JjwtTokenProvider implements TokenProvider {
         .claim("role", role)
         .claim("sid", sessionId.toString())
         .issuedAt(Date.from(now))
-        .expiration(Date.from(getAccessTokenExpiresAt(now)))
+        .expiration(Date.from(now.plus(tokenProperties.accessTokenExpiration())))
         .signWith(accessSecretKey)
         .compact();
   }
 
   @Override
-  public String createRefreshToken(UUID userId, UUID jti, UUID sessionId, Instant now,
-      Instant expiresAt) {
+  public String createRefreshToken(UUID userId, UUID jti, UUID sessionId, Instant now) {
     return Jwts.builder()
         .subject(userId.toString())
         .id(jti.toString())
         .claim("sid", sessionId.toString())
         .issuedAt(Date.from(now))
-        .expiration(Date.from(expiresAt))
+        .expiration(Date.from(now.plus(tokenProperties.refreshTokenExpiration())))
         .signWith(refreshSecretKey)
         .compact();
   }
@@ -98,22 +96,7 @@ public class JjwtTokenProvider implements TokenProvider {
       throw InvalidRefreshTokenException.withCause(e);
     }
   }
-
-  @Override
-  public Instant getAccessTokenExpiresAt(Instant from) {
-    return from.plus(tokenProperties.accessTokenExpirationMinutes(), ChronoUnit.MINUTES);
-  }
-
-  @Override
-  public Instant getRefreshTokenExpiresAt(Instant from) {
-    return from.plus(tokenProperties.refreshTokenExpirationDays(), ChronoUnit.DAYS);
-  }
-
-  @Override
-  public Duration getRefreshTokenTtl() {
-    return Duration.ofDays(tokenProperties.refreshTokenExpirationDays());
-  }
-
+  
   private Claims verifyAndParse(String token, SecretKey key,
       Supplier<? extends TokenException> invalidTokenSupplier,
       Function<Throwable, ? extends TokenException> invalidTokenFactory) {
@@ -125,9 +108,11 @@ public class JjwtTokenProvider implements TokenProvider {
           .parseSignedClaims(token)
           .getPayload();
     } catch (ExpiredJwtException e) {
-      throw ExpiredTokenException.withNone(); // 정상 서명 + 만료: refresh 유도 대상
+      throw ExpiredTokenException.withNone(); // 정상 서명 + 만료
+    } catch (SignatureException e) {
+      throw invalidTokenSupplier.get();       // 서명 불일치: Nimbus처럼 원인 예외 없이 던짐
     } catch (JwtException | IllegalArgumentException e) {
-      throw invalidTokenFactory.apply(e); // 구조 깨짐/검증 오류: cause 보존
+      throw invalidTokenFactory.apply(e);     // 기타 구조 깨짐/형식 오류: cause 보존
     }
   }
 }

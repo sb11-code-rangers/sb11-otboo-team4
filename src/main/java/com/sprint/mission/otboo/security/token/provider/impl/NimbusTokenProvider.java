@@ -20,9 +20,7 @@ import com.sprint.mission.otboo.security.token.properties.TokenProperties;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import java.text.ParseException;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
@@ -31,6 +29,7 @@ import java.util.function.Supplier;
 
 public class NimbusTokenProvider implements TokenProvider {
 
+  // 알고리즘 정책
   private static final JWSHeader JWS_HEADER = new JWSHeader.Builder(JWSAlgorithm.HS256)
       .type(JOSEObjectType.JWT)
       .build();
@@ -53,6 +52,7 @@ public class NimbusTokenProvider implements TokenProvider {
       this.refreshSigner = new MACSigner(refreshSecret);
       this.refreshVerifier = new MACVerifier(refreshSecret);
     } catch (JOSEException e) {
+      // 시스템 부팅 시에 발생할 예외 (비즈니스 예외 X)
       throw new IllegalStateException("토큰 키 초기화 실패", e);
     }
   }
@@ -64,20 +64,19 @@ public class NimbusTokenProvider implements TokenProvider {
         .claim("role", role)
         .claim("sid", sessionId.toString())
         .issueTime(Date.from(now))
-        .expirationTime(Date.from(getAccessTokenExpiresAt(now)))
+        .expirationTime(Date.from(now.plus(tokenProperties.accessTokenExpiration())))
         .build();
     return sign(claims, accessSigner);
   }
 
   @Override
-  public String createRefreshToken(UUID userId, UUID jti, UUID sessionId, Instant now,
-      Instant expiresAt) {
+  public String createRefreshToken(UUID userId, UUID jti, UUID sessionId, Instant now) {
     JWTClaimsSet claims = new JWTClaimsSet.Builder()
         .subject(userId.toString())
         .jwtID(jti.toString())
         .claim("sid", sessionId.toString())
         .issueTime(Date.from(now))
-        .expirationTime(Date.from(expiresAt))
+        .expirationTime(Date.from(now.plus(tokenProperties.refreshTokenExpiration())))
         .build();
     return sign(claims, refreshSigner);
   }
@@ -116,29 +115,15 @@ public class NimbusTokenProvider implements TokenProvider {
     }
   }
 
-  @Override
-  public Instant getAccessTokenExpiresAt(Instant from) {
-    return from.plus(tokenProperties.accessTokenExpirationMinutes(), ChronoUnit.MINUTES);
-  }
-
-  @Override
-  public Instant getRefreshTokenExpiresAt(Instant from) {
-    return from.plus(tokenProperties.refreshTokenExpirationDays(), ChronoUnit.DAYS);
-  }
-
   private String sign(JWTClaimsSet claims, JWSSigner signer) {
     try {
       SignedJWT jwt = new SignedJWT(JWS_HEADER, claims);
       jwt.sign(signer);
       return jwt.serialize();
     } catch (JOSEException e) {
+      // 실제 시스템 운영 중 발생할 에러 (비즈니스 예외 X -> 서버 내부 장애로 취급이 맞을까?)
       throw new IllegalStateException("토큰 서명 실패", e);
     }
-  }
-
-  @Override
-  public Duration getRefreshTokenTtl() {
-    return Duration.ofDays(tokenProperties.refreshTokenExpirationDays());
   }
 
   private JWTClaimsSet verifyAndParse(String token, Instant now, JWSVerifier verifier,
