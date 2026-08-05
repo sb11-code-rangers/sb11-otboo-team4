@@ -15,6 +15,8 @@ import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedLikeRepository;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedRepository;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
+import com.sprint.mission.otboo.global.event.NotificationLevel;
+import com.sprint.mission.otboo.global.event.NotificationRequestedEvent;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +121,13 @@ public class FeedService {
     }
     feedRepository.incrementLikeCount(feedId);
     log.info("피드 좋아요 완료: feedId={}", feedId);
+
+    UUID authorId = feedRepository.findAuthorId(feedId)
+        .orElseThrow(() -> FeedNotFoundException.withId(feedId));
+    UserSummary liker = userSummaryQueryRepository.findByUserId(currentUserId);
+    eventPublisher.publishEvent(new NotificationRequestedEvent(
+        Set.of(authorId), "좋아요",
+        liker.name() + "님이 내 피드를 좋아합니다.", NotificationLevel.INFO));
   }
 
   @Transactional

@@ -536,7 +536,9 @@ class FeedServiceTest {
       UUID userId = UUID.randomUUID();
       given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
       given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
-
+      given(feedRepository.findAuthorId(feedId)).willReturn(Optional.of(UUID.randomUUID()));
+      given(userSummaryQueryRepository.findByUserId(userId))
+          .willReturn(new UserSummary(userId, "좋아요누른사람", "img.png"));
       // when
       feedService.like(feedId, userId);
 
