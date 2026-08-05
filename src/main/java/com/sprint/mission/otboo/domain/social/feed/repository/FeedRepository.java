@@ -2,6 +2,7 @@ package com.sprint.mission.otboo.domain.social.feed.repository;
 
 import com.sprint.mission.otboo.domain.social.feed.entity.Feed;
 import com.sprint.mission.otboo.domain.social.feed.repository.querydsl.FeedCustomRepository;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -19,4 +20,8 @@ public interface FeedRepository extends JpaRepository<Feed, UUID>, FeedCustomRep
   void decrementLikeCount(@Param("feedId") UUID feedId);
 
   boolean existsByIdAndSoftDeletable_DeletedAtIsNull(UUID id);
+
+  default Optional<UUID> findAuthorId(UUID feedId) {
+    return Optional.empty();
+  }
 }

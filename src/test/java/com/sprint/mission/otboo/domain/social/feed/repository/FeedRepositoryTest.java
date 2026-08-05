@@ -10,6 +10,7 @@ import com.sprint.mission.otboo.global.config.JpaConfig;
 import com.sprint.mission.otboo.global.config.QuerydslConfig;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -152,6 +153,36 @@ class FeedRepositoryTest {
 
       // then
       assertThat(exists).isFalse();
+    }
+  }
+
+  @Nested
+  @DisplayName("findAuthorId")
+  class FindAuthorId {
+
+    @Test
+    @DisplayName("피드의 작성자 ID를 반환한다")
+    void 피드의_작성자_ID를_반환한다() {
+      // given
+      UUID authorId = UUID.randomUUID();
+      Feed feed = feedRepository.save(
+          Feed.create(authorId, UUID.randomUUID(), "내용", DUMMY_SNAPSHOT, List.of()));
+
+      // when
+      Optional<UUID> result = feedRepository.findAuthorId(feed.getId());
+
+      // then
+      assertThat(result).contains(authorId);
+    }
+
+    @Test
+    @DisplayName("피드가 없으면 빈 Optional을 반환한다")
+    void 피드가_없으면_빈_Optional을_반환한다() {
+      // when
+      Optional<UUID> result = feedRepository.findAuthorId(UUID.randomUUID());
+
+      // then
+      assertThat(result).isEmpty();
     }
   }
 }
