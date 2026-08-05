@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,7 @@ public class FeedService {
   private final WeatherSnapshotProvider weatherSnapshotProvider;
   private final OotdSnapshotProvider ootdSnapshotProvider;
   private final FeedLikeRepository feedLikeRepository;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
   public FeedDto create(FeedCreateRequest request, UUID currentUserId) {
@@ -84,7 +86,7 @@ public class FeedService {
     Set<UUID> likedFeedIds = feedIds.isEmpty()
         ? Set.of()
         : new HashSet<>(feedLikeRepository.findLikedFeedIds(currentUserId, feedIds));
-    
+
     List<FeedDto> data = feeds.stream()
         .map(feed -> {
           UserSummary author = authorMap.get(feed.getAuthorId());
@@ -129,6 +131,7 @@ public class FeedService {
       log.info("피드 좋아요 취소 완료: feedId={}", feedId);
     }
   }
+
 
   private boolean isUniqueViolation(DataIntegrityViolationException e) {
     return e.getCause() instanceof ConstraintViolationException cve

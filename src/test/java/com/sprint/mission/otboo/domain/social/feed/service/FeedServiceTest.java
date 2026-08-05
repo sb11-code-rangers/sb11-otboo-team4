@@ -39,7 +39,9 @@ import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.SkyStatus;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
+import com.sprint.mission.otboo.global.event.NotificationRequestedEvent;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
@@ -50,6 +52,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 
@@ -86,6 +89,9 @@ class FeedServiceTest {
 
   @Mock
   FeedLikeRepository feedLikeRepository;
+
+  @Mock
+  ApplicationEventPublisher eventPublisher;
 
   private static void setFeedId(Feed feed, UUID id) {
     try {
@@ -610,6 +616,31 @@ class FeedServiceTest {
       // when & then
       assertThatThrownBy(() -> feedService.like(feedId, userId))
           .isInstanceOf(FeedNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("좋아요에 성공하면 피드 작성자에게 알림 이벤트를 발행한다")
+    void 좋아요에_성공하면_피드_작성자에게_알림_이벤트를_발행한다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      UUID authorId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
+      given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
+      given(feedRepository.findAuthorId(feedId)).willReturn(Optional.of(authorId));
+      given(userSummaryQueryRepository.findByUserId(userId))
+          .willReturn(new UserSummary(userId, "좋아요누른사람", "img.png"));
+
+      // when
+      feedService.like(feedId, userId);
+
+      // then
+      ArgumentCaptor<NotificationRequestedEvent> captor =
+          ArgumentCaptor.forClass(NotificationRequestedEvent.class);
+      verify(eventPublisher).publishEvent(captor.capture());
+      NotificationRequestedEvent event = captor.getValue();
+      assertThat(event.receiverIds()).containsExactly(authorId);
+      assertThat(event.content()).contains("좋아요누른사람");
     }
   }
 
