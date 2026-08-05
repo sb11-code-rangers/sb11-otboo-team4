@@ -184,5 +184,20 @@ class FeedRepositoryTest {
       // then
       assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("소프트 삭제된 피드는 빈 Optional을 반환한다")
+    void 소프트_삭제된_피드는_빈_Optional을_반환한다() {
+      // given
+      Feed feed = feedRepository.save(
+          Feed.create(UUID.randomUUID(), UUID.randomUUID(), "내용", DUMMY_SNAPSHOT, List.of()));
+      setDeletedAt(feed.getId(), Instant.now());
+
+      // when
+      Optional<UUID> result = feedRepository.findAuthorId(feed.getId());
+
+      // then
+      assertThat(result).isEmpty();
+    }
   }
 }
