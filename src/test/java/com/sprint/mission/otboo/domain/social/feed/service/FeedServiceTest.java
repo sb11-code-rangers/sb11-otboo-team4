@@ -87,6 +87,16 @@ class FeedServiceTest {
   @Mock
   FeedLikeRepository feedLikeRepository;
 
+  private static void setFeedId(Feed feed, UUID id) {
+    try {
+      var field = Feed.class.getDeclaredField("id");
+      field.setAccessible(true);
+      field.set(feed, id);
+    } catch (ReflectiveOperationException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   @Nested
   @DisplayName("피드 등록")
   class CreateFeed {
@@ -362,6 +372,7 @@ class FeedServiceTest {
       when(feedRepository.findFeeds(params)).thenReturn(repoPage);
       given(userSummaryQueryRepository.findByUserIds(anyList()))
           .willReturn(List.of(summary1, summary2));
+      given(feedLikeRepository.findLikedFeedIds(any(), anyList())).willReturn(List.of());
 
       FeedDto dto1 = new FeedDto(feed1.getId(), null, null, summary1, null, null, "피드1", 0L, 0,
           false);
@@ -403,6 +414,7 @@ class FeedServiceTest {
       when(feedRepository.findFeeds(params)).thenReturn(repoPage);
       given(userSummaryQueryRepository.findByUserIds(anyList()))
           .willReturn(List.of(summary1, summary2));
+      given(feedLikeRepository.findLikedFeedIds(any(), anyList())).willReturn(List.of());
 
       FeedDto dto1 = new FeedDto(feed1.getId(), null, null, summary1, null, null, "피드1", 0L, 0,
           false);
@@ -445,6 +457,7 @@ class FeedServiceTest {
       UserSummary summary2 = new UserSummary(authorId2, "유저2", "img2.png");
       given(userSummaryQueryRepository.findByUserIds(anyList()))
           .willReturn(List.of(summary1, summary2));
+      given(feedLikeRepository.findLikedFeedIds(any(), anyList())).willReturn(List.of());
 
       FeedDto dto1 = new FeedDto(feed1.getId(), null, null, summary1, null, null, "피드1", 0L, 0,
           false);
@@ -472,24 +485,28 @@ class FeedServiceTest {
       UUID authorId = UUID.randomUUID();
       UserSummary summary = new UserSummary(authorId, "유저", "img.png");
 
+      UUID likedFeedId = UUID.randomUUID();
+      UUID notLikedFeedId = UUID.randomUUID();
       Feed likedFeed = Feed.create(authorId, UUID.randomUUID(), "좋아요한 피드", DUMMY_SNAPSHOT,
           List.of());
       Feed notLikedFeed = Feed.create(authorId, UUID.randomUUID(), "안 누른 피드", DUMMY_SNAPSHOT,
           List.of());
+      setFeedId(likedFeed, likedFeedId);
+      setFeedId(notLikedFeed, notLikedFeedId);
 
       CursorPageResponse<Feed> repoPage = new CursorPageResponse<>(
           List.of(likedFeed, notLikedFeed), null, null, false, 2L,
           "createdAt", SortDirection.DESCENDING);
 
-      FeedDto likedDto = new FeedDto(likedFeed.getId(), null, null, summary, null, null,
+      FeedDto likedDto = new FeedDto(likedFeedId, null, null, summary, null, null,
           "좋아요한 피드", 0L, 0, true);
-      FeedDto notLikedDto = new FeedDto(notLikedFeed.getId(), null, null, summary, null, null,
+      FeedDto notLikedDto = new FeedDto(notLikedFeedId, null, null, summary, null, null,
           "안 누른 피드", 0L, 0, false);
 
       when(feedRepository.findFeeds(params)).thenReturn(repoPage);
       when(userSummaryQueryRepository.findByUserIds(anyList())).thenReturn(List.of(summary));
-      when(feedLikeRepository.findLikedFeedIds(any(), any()))
-          .thenReturn(List.of(likedFeed.getId()));
+      when(feedLikeRepository.findLikedFeedIds(any(), anyList()))
+          .thenReturn(List.of(likedFeedId));
       when(feedMapper.toDto(likedFeed, summary, true)).thenReturn(likedDto);
       when(feedMapper.toDto(notLikedFeed, summary, false)).thenReturn(notLikedDto);
 

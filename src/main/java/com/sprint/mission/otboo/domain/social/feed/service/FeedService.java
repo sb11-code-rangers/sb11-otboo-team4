@@ -15,8 +15,10 @@ import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedLikeRepository;
 import com.sprint.mission.otboo.domain.social.feed.repository.FeedRepository;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -75,10 +77,19 @@ public class FeedService {
         .collect(Collectors.toMap(UserSummary::userId, Function.identity(),
             (existing, replacement) -> existing));
 
+    List<UUID> feedIds = feeds.stream()
+        .map(Feed::getId)
+        .toList();
+
+    Set<UUID> likedFeedIds = feedIds.isEmpty()
+        ? Set.of()
+        : new HashSet<>(feedLikeRepository.findLikedFeedIds(currentUserId, feedIds));
+    
     List<FeedDto> data = feeds.stream()
         .map(feed -> {
           UserSummary author = authorMap.get(feed.getAuthorId());
-          return feedMapper.toDto(feed, author, false);
+          boolean likedByMe = likedFeedIds.contains(feed.getId());
+          return feedMapper.toDto(feed, author, likedByMe);
         })
         .toList();
 
