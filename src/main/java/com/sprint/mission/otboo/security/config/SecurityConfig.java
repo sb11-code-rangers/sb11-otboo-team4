@@ -3,7 +3,7 @@ package com.sprint.mission.otboo.security.config;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import com.sprint.mission.otboo.security.exception.ErrorResponseWriter;
-import com.sprint.mission.otboo.domain.authuser.auth.details.CustomUserDetailsService;
+import com.sprint.mission.otboo.security.details.CustomUserDetailsService;
 import com.sprint.mission.otboo.security.filter.TokenAuthenticationFilter;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;

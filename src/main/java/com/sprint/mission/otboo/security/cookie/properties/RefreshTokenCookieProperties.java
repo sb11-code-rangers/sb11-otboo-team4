@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
-@ConfigurationProperties(prefix = "otboo.security.cookie")
+@ConfigurationProperties(prefix = "otboo.security.refresh-cookie")
 public record RefreshTokenCookieProperties(
 
     @NotNull
