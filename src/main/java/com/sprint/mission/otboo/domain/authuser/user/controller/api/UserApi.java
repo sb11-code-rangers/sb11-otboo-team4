@@ -29,11 +29,34 @@ public interface UserApi {
   })
   ResponseEntity<UserDto> signUp(UserCreateRequest request);
 
+  @Operation(summary = "프로필 조회", description = "본인 프로필을 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "프로필 조회 성공"),
+      @ApiResponse(responseCode = "401", description = "인증되지 않음"),
+      @ApiResponse(responseCode = "403", description = "본인 프로필만 조회 가능"),
+      @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+  })
   ResponseEntity<ProfileDto> getProfile(UUID userId, UserPrincipal principal);
 
+  @Operation(summary = "프로필 수정", description = "본인 프로필(이름, 성별, 생년월일, 위치, 체감온도 민감도)을 수정합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "프로필 수정 성공"),
+      @ApiResponse(responseCode = "400", description = "요청 값 유효성 검증 실패"),
+      @ApiResponse(responseCode = "401", description = "인증되지 않음"),
+      @ApiResponse(responseCode = "403", description = "본인 프로필만 수정 가능"),
+      @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+  })
   ResponseEntity<ProfileDto> changeProfile(UUID userId, ProfileUpdateRequest request,
       MultipartFile image, UserPrincipal principal);
 
+  @Operation(summary = "비밀번호 변경", description = "본인 비밀번호를 변경합니다. 변경 즉시 모든 기기의 세션이 회수되어 재로그인이 필요합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공"),
+      @ApiResponse(responseCode = "400", description = "요청 값 유효성 검증 실패"),
+      @ApiResponse(responseCode = "401", description = "인증되지 않음"),
+      @ApiResponse(responseCode = "403", description = "본인 비밀번호만 변경 가능"),
+      @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
+  })
   ResponseEntity<UserDto> changePassword(UUID userId, ChangePasswordRequest request,
       UserPrincipal principal);
 }

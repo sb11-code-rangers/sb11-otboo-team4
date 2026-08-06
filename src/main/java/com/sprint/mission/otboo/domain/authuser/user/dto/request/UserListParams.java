@@ -40,7 +40,7 @@ public record UserListParams(
   private static final SortDirection DEFAULT_SORT_DIRECTION = SortDirection.ASCENDING;
 
   public UserListParams {
-    if (limit == null || limit <= 0) {
+    if (limit == null) {
       limit = DEFAULT_LIMIT;
     }
     if (!StringUtils.hasText(sortBy)) {

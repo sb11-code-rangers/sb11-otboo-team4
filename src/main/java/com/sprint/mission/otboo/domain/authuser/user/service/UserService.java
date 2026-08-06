@@ -1,6 +1,5 @@
 package com.sprint.mission.otboo.domain.authuser.user.service;
 
-import com.sprint.mission.otboo.domain.authuser.auth.exception.AccessDeniedException;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.ChangePasswordRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.ProfileUpdateRequest;
 import com.sprint.mission.otboo.domain.authuser.user.dto.request.UserCreateRequest;
@@ -9,6 +8,7 @@ import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Location;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
+import com.sprint.mission.otboo.domain.authuser.user.exception.AccessDeniedException;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
@@ -66,19 +66,20 @@ public class UserService {
   }
 
   @Transactional
-  public ProfileDto changeProfile(UUID userId, UUID requestUserId, ProfileUpdateRequest request,
-      MultipartFile image) {
+  public ProfileDto changeProfile(UUID userId, ProfileUpdateRequest request,
+      MultipartFile image, UUID requestUserId) {
     checkSelf(userId, requestUserId);
 
     Profile foundProfile = profileRepository.findByIdWithUser(userId)
         .orElseThrow(UserNotFoundException::withNone);
 
-    Location newLocation = userMapper.locationFrom(request.location());
-    foundProfile.changeFields(
-        request.name(),
+    // 프로필 정보 수정
+    foundProfile.getUser().changeName(request.name());
+
+    foundProfile.changeProfile(
         request.gender(),
         request.birthDate(),
-        newLocation,
+        userMapper.locationFrom(request.location()),
         request.temperatureSensitivity()
     );
 
@@ -88,21 +89,18 @@ public class UserService {
   }
 
   @Transactional
-  public UserDto changePassword(UUID userId, UUID requestUserId, ChangePasswordRequest request) {
+  public void changePassword(UUID userId, ChangePasswordRequest request, UUID requestUserId) {
     checkSelf(userId, requestUserId);
 
     User foundUser = userRepository.findById(userId)
         .orElseThrow(UserNotFoundException::withNone);
 
-    foundUser.changePassword(passwordEncoder.encode(request.password()));
+    foundUser.changePassword(
+        passwordEncoder.encode(request.password())
+    );
 
-    // 비밀번호 변경 시 강제 로그아웃
     userSessionRegistry.revokeAll(userId);
-
-    // 비밀번호 변경 시 tempPasswordRegistry 파기
     tempPasswordRegistry.revoke(userId);
-
-    return userMapper.userDtoFrom(foundUser);
   }
 
   private void checkSelf(UUID userId, UUID requestUserId) {

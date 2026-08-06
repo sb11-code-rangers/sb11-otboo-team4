@@ -1,7 +1,10 @@
 package com.sprint.mission.otboo.domain.authuser.auth.dto.response;
 
+import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
+
 public record SignInDto(
-    JwtDto jwtDto,
+    UserDto userDto,
+    String accessToken,
     String refreshToken
 ) {
 
