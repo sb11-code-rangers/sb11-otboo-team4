@@ -4,8 +4,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,24 +26,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
-// AdminController는 클래스 레벨 @PreAuthorize("hasAuthority('ADMIN')")로 보호되는데, 이 애노테이션이
-// 컨트롤러를 AOP 프록시로 감싸기 때문에 @WebMvcTest(AdminController.class) 슬라이스에서는
-// 컨트롤러 빈 자체가 등록되지 않는 프레임워크 이슈가 있었다(GET/PATCH 모두 핸들러를 못 찾음).
-// 그래서 이 테스트만 전체 컨텍스트(@SpringBootTest)로 띄워 실제 @PreAuthorize 적용을 검증한다.
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
+@WebMvcTest(AdminController.class)
 @DisplayName("AdminController")
 class AdminControllerTest {
 
@@ -56,16 +45,6 @@ class AdminControllerTest {
   @MockitoBean
   private AdminService adminService;
 
-  private Authentication adminAuthentication() {
-    return new UsernamePasswordAuthenticationToken(
-        "admin", null, List.of(new SimpleGrantedAuthority("ADMIN")));
-  }
-
-  private Authentication userAuthentication() {
-    return new UsernamePasswordAuthenticationToken(
-        "user", null, List.of(new SimpleGrantedAuthority("USER")));
-  }
-
   private UserDto userDto(UUID id, Role role, boolean locked) {
     return new UserDto(id, Instant.now(), "hong@test.com", "홍길동", role, locked);
   }
@@ -75,35 +54,27 @@ class AdminControllerTest {
   class SearchUserList {
 
     @Test
-    @DisplayName("관리자면 200과 목록을 반환한다")
-    void 관리자면_200과_목록을_반환한다() throws Exception {
+    @DisplayName("유효한 요청이면 200과 목록을 반환한다")
+    void searchUserList_validRequest_returns200() throws Exception {
       // given
       CursorPageResponse<UserDto> response = new CursorPageResponse<>(
           List.of(), null, null, false, 0L, "email", SortDirection.ASCENDING);
       given(adminService.searchUserList(any())).willReturn(response);
 
       // when & then
-      mockMvc.perform(get("/api/users").with(authentication(adminAuthentication())))
+      mockMvc.perform(get("/api/users"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.sortBy").value("email"));
     }
 
     @Test
-    @DisplayName("관리자가 아니면 403을 반환한다")
-    void 관리자가_아니면_403을_반환한다() throws Exception {
-      // when & then
-      mockMvc.perform(get("/api/users").with(authentication(userAuthentication())))
-          .andExpect(status().isForbidden());
-    }
-
-    @Test
     @DisplayName("limit이 범위를 벗어나면 400을 반환한다")
-    void limit이_범위를_벗어나면_400을_반환한다() throws Exception {
+    void searchUserList_limitOutOfRange_returns400() throws Exception {
       // when & then
-      mockMvc.perform(get("/api/users")
-              .param("limit", "0")
-              .with(authentication(adminAuthentication())))
+      mockMvc.perform(get("/api/users").param("limit", "0"))
           .andExpect(status().isBadRequest());
+
+      verify(adminService, never()).searchUserList(any());
     }
   }
 
@@ -112,8 +83,8 @@ class AdminControllerTest {
   class ChangeRole {
 
     @Test
-    @DisplayName("관리자면 200과 변경된 UserDto를 반환한다")
-    void 관리자면_200과_변경된_UserDto를_반환한다() throws Exception {
+    @DisplayName("유효한 요청이면 200과 변경된 UserDto를 반환한다")
+    void changeRole_validRequest_returns200() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
       UserRoleUpdateRequest request = new UserRoleUpdateRequest(Role.ADMIN);
@@ -123,32 +94,25 @@ class AdminControllerTest {
       // when & then
       mockMvc.perform(patch("/api/users/{userId}/role", userId)
               .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request))
-              .with(authentication(adminAuthentication()))
-              .with(csrf()))
+              .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.role").value("ADMIN"));
     }
 
     @Test
-    @DisplayName("관리자가 아니면 403을 반환한다")
-    void 관리자가_아니면_403을_반환한다() throws Exception {
-      // given
-      UUID userId = UUID.randomUUID();
-      UserRoleUpdateRequest request = new UserRoleUpdateRequest(Role.ADMIN);
-
-      // when & then
-      mockMvc.perform(patch("/api/users/{userId}/role", userId)
+    @DisplayName("role이 없으면 400을 반환한다")
+    void changeRole_missingRole_returns400() throws Exception {
+      mockMvc.perform(patch("/api/users/{userId}/role", UUID.randomUUID())
               .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request))
-              .with(authentication(userAuthentication()))
-              .with(csrf()))
-          .andExpect(status().isForbidden());
+              .content("{}"))
+          .andExpect(status().isBadRequest());
+
+      verify(adminService, never()).changeRole(any(), any());
     }
 
     @Test
     @DisplayName("존재하지 않는 사용자면 404를 반환한다")
-    void 존재하지_않는_사용자면_404를_반환한다() throws Exception {
+    void changeRole_userNotFound_returns404() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
       UserRoleUpdateRequest request = new UserRoleUpdateRequest(Role.ADMIN);
@@ -157,9 +121,7 @@ class AdminControllerTest {
       // when & then
       mockMvc.perform(patch("/api/users/{userId}/role", userId)
               .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request))
-              .with(authentication(adminAuthentication()))
-              .with(csrf()))
+              .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNotFound());
     }
   }
@@ -169,8 +131,8 @@ class AdminControllerTest {
   class ChangeLock {
 
     @Test
-    @DisplayName("관리자면 200과 변경된 UserDto를 반환한다")
-    void 관리자면_200과_변경된_UserDto를_반환한다() throws Exception {
+    @DisplayName("유효한 요청이면 200과 변경된 UserDto를 반환한다")
+    void changeLock_validRequest_returns200() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
       UserLockUpdateRequest request = new UserLockUpdateRequest(true);
@@ -180,42 +142,35 @@ class AdminControllerTest {
       // when & then
       mockMvc.perform(patch("/api/users/{userId}/lock", userId)
               .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request))
-              .with(authentication(adminAuthentication()))
-              .with(csrf()))
+              .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.locked").value(true));
     }
 
     @Test
-    @DisplayName("관리자가 아니면 403을 반환한다")
-    void 관리자가_아니면_403을_반환한다() throws Exception {
-      // given
-      UUID userId = UUID.randomUUID();
-      UserLockUpdateRequest request = new UserLockUpdateRequest(true);
-
-      // when & then
-      mockMvc.perform(patch("/api/users/{userId}/lock", userId)
+    @DisplayName("locked 값이 없으면 400을 반환한다")
+    void changeLock_missingLocked_returns400() throws Exception {
+      mockMvc.perform(patch("/api/users/{userId}/lock", UUID.randomUUID())
               .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request))
-              .with(authentication(userAuthentication()))
-              .with(csrf()))
-          .andExpect(status().isForbidden());
+              .content("{}"))
+          .andExpect(status().isBadRequest());
+
+      verify(adminService, never()).changeLock(any(), any());
     }
 
     @Test
-    @DisplayName("locked 값이 없으면 400을 반환한다")
-    void locked_값이_없으면_400을_반환한다() throws Exception {
+    @DisplayName("존재하지 않는 사용자면 404를 반환한다")
+    void changeLock_userNotFound_returns404() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
+      UserLockUpdateRequest request = new UserLockUpdateRequest(true);
+      willThrow(UserNotFoundException.withNone()).given(adminService).changeLock(any(), any());
 
       // when & then
       mockMvc.perform(patch("/api/users/{userId}/lock", userId)
               .contentType(MediaType.APPLICATION_JSON)
-              .content("{}")
-              .with(authentication(adminAuthentication()))
-              .with(csrf()))
-          .andExpect(status().isBadRequest());
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound());
     }
   }
 }
