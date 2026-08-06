@@ -1,6 +1,6 @@
 //package com.sprint.mission.otboo.security.cookie;
 //
-//import com.sprint.mission.otboo.security.cookie.RefreshCookieProperties;
+//import com.sprint.mission.otboo.security.cookie.properties.RefreshCookieProperties;
 //import com.sprint.mission.otboo.security.cookie.RefreshTokenCookieProvider;
 //import com.sprint.mission.otboo.security.token.properties.TokenProperties;
 //import org.junit.jupiter.api.BeforeEach;
