@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.security.usersession.exception;
+package com.sprint.mission.otboo.security.usersession.exception.business;
 
 import com.sprint.mission.otboo.global.exception.OtbooException;
 import java.util.Map;

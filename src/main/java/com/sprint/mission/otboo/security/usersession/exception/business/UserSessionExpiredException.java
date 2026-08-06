@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.security.usersession.exception;
+package com.sprint.mission.otboo.security.usersession.exception.business;
 
 import java.util.Map;
 import org.springframework.http.HttpStatus;
