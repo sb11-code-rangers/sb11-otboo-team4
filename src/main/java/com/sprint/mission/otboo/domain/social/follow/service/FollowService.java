@@ -1,6 +1,5 @@
 package com.sprint.mission.otboo.domain.social.follow.service;
 
-import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.social.common.dto.UserSummary;
 import com.sprint.mission.otboo.domain.social.common.repository.querydsl.UserSummaryQueryRepository;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowCreateRequest;
