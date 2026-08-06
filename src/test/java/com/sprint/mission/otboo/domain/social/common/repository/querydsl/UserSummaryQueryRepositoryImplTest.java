@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
+import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.social.common.dto.UserSummary;
 import com.sprint.mission.otboo.domain.social.common.repository.querydsl.impl.UserSummaryQueryRepositoryImpl;
 import com.sprint.mission.otboo.global.config.JpaConfig;
@@ -45,7 +46,7 @@ class UserSummaryQueryRepositoryImplTest {
       // given
       User user = User.create("otboo", "otboo@test.com", "encoded-password");
       testEntityManager.persist(user);
-      Profile profile = Profile.createDefault(user);
+      Profile profile = Profile.create(user);
       testEntityManager.persist(profile);
       testEntityManager.flush();
       testEntityManager.clear();
@@ -66,7 +67,7 @@ class UserSummaryQueryRepositoryImplTest {
       // given
       User user = User.create("otboo", "otboo@test.com", "encoded-password");
       testEntityManager.persist(user);
-      Profile profile = Profile.createDefault(user);
+      Profile profile = Profile.create(user);
       ReflectionTestUtils.setField(profile, "profileImageUrl", "https://img.url/otboo.png");
       testEntityManager.persist(profile);
       testEntityManager.flush();
@@ -137,8 +138,8 @@ class UserSummaryQueryRepositoryImplTest {
       // given
       User user1 = testEntityManager.persist(User.create("우디", "woody@otboo.io", "password"));
       User user2 = testEntityManager.persist(User.create("버즈", "buzz@otboo.io", "password"));
-      testEntityManager.persist(Profile.createDefault(user1));
-      testEntityManager.persist(Profile.createDefault(user2));
+      testEntityManager.persist(Profile.create(user1));
+      testEntityManager.persist(Profile.create(user2));
       testEntityManager.flush();
       testEntityManager.clear();
 
