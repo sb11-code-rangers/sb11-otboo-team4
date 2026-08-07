@@ -15,7 +15,6 @@ import com.sprint.mission.otboo.domain.authuser.auth.dto.response.RefreshDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.InvalidCredentialsException;
-import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
@@ -43,9 +42,6 @@ class AuthControllerTest {
 
   @MockitoBean
   private AuthService authService;
-
-  @MockitoBean
-  private AuthMapper authMapper;
 
   @MockitoBean
   private RefreshTokenCookieProvider refreshTokenCookieProvider;
@@ -80,10 +76,9 @@ class AuthControllerTest {
     void 정상_요청이면_200과_JwtDto를_반환하고_refresh_쿠키를_발급한다() throws Exception {
       // given
       UserDto userDto = userDto();
-      SignInDto signInDto = new SignInDto(userDto, "access-token", "refresh-token");
       JwtDto jwtDto = new JwtDto(userDto, "access-token");
+      SignInDto signInDto = new SignInDto(jwtDto, "refresh-token");
       given(authService.signIn(any())).willReturn(signInDto);
-      given(authMapper.jwtDtoFrom(signInDto)).willReturn(jwtDto);
 
       // when & then
       mockMvc.perform(post("/api/auth/sign-in")
@@ -169,10 +164,9 @@ class AuthControllerTest {
     void 정상_요청이면_200과_JwtDto를_반환하고_새_refresh_쿠키를_발급한다() throws Exception {
       // given
       UserDto userDto = userDto();
-      RefreshDto refreshDto = new RefreshDto(userDto, "new-access-token", "new-refresh-token");
       JwtDto jwtDto = new JwtDto(userDto, "new-access-token");
+      RefreshDto refreshDto = new RefreshDto(jwtDto, "new-refresh-token");
       given(authService.refresh("refresh-token")).willReturn(refreshDto);
-      given(authMapper.jwtDtoFrom(refreshDto)).willReturn(jwtDto);
 
       // when & then
       mockMvc.perform(post("/api/auth/refresh")

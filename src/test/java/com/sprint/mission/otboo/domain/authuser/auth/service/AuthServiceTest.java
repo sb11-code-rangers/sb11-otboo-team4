@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.request.ResetPasswordRequest;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.request.SignInRequest;
+import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.RefreshDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.event.TempPasswordRequestedEvent;
@@ -172,7 +173,8 @@ class AuthServiceTest {
       given(tokenProvider.createRefreshToken(userId, sessionId, jti, NOW))
           .willReturn("refresh-token");
 
-      SignInDto expected = new SignInDto(userDto, "access-token", "refresh-token");
+      SignInDto expected =
+          new SignInDto(new JwtDto(userDto, "access-token"), "refresh-token");
       given(authMapper.signInDtoFrom(userDto, "access-token", "refresh-token")).willReturn(expected);
 
       // when
@@ -292,8 +294,8 @@ class AuthServiceTest {
       given(tokenProvider.createRefreshToken(user.getId(), sessionId, newJti, NOW))
           .willReturn("new-refresh-token");
 
-      RefreshDto expected =
-          new RefreshDto(userDtoOf(user.getId(), Role.USER), "new-access-token", "new-refresh-token");
+      RefreshDto expected = new RefreshDto(
+          new JwtDto(userDtoOf(user.getId(), Role.USER), "new-access-token"), "new-refresh-token");
       given(authMapper.refreshDtoFrom(user, "new-access-token", "new-refresh-token"))
           .willReturn(expected);
 

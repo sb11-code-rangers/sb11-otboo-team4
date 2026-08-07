@@ -4,7 +4,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.domain.authuser.user.mapper.UserMapper;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
@@ -36,9 +35,6 @@ class AuthControllerCsrfTest {
 
   @MockitoBean
   private AuthService authService;
-
-  @MockitoBean
-  private AuthMapper authMapper;
 
   @MockitoBean
   private RefreshTokenCookieProvider refreshTokenCookieProvider;
