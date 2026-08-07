@@ -17,31 +17,15 @@ public class AuthMapper {
 
   public SignInDto signInDtoFrom(UserDto userDto, String accessToken, String refreshToken) {
     return new SignInDto(
-        userDto,
-        accessToken,
+        new JwtDto(userDto, accessToken),
         refreshToken
     );
   }
 
   public RefreshDto refreshDtoFrom(User user, String accessToken, String refreshToken) {
     return new RefreshDto(
-        userMapper.userDtoFrom(user),
-        accessToken,
+        new JwtDto(userMapper.userDtoFrom(user), accessToken),
         refreshToken
-    );
-  }
-
-  public JwtDto jwtDtoFrom(SignInDto signInDto) {
-    return new JwtDto(
-        signInDto.userDto(),
-        signInDto.accessToken()
-    );
-  }
-
-  public JwtDto jwtDtoFrom(RefreshDto refreshDto) {
-    return new JwtDto(
-        refreshDto.userDto(),
-        refreshDto.accessToken()
     );
   }
 }

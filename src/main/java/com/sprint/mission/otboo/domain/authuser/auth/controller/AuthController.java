@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController implements AuthApi {
 
   private final AuthService authService;
-  private final AuthMapper authMapper;
   private final RefreshTokenCookieProvider refreshTokenCookieProvider;
 
 
@@ -52,7 +51,7 @@ public class AuthController implements AuthApi {
     refreshTokenCookieProvider.attach(response, result.refreshToken());
     return ResponseEntity
         .status(HttpStatus.OK)
-        .body(authMapper.jwtDtoFrom(result));
+        .body(result.jwtDto());
   }
 
   @Override
@@ -74,7 +73,7 @@ public class AuthController implements AuthApi {
     refreshTokenCookieProvider.attach(response, result.refreshToken());
     return ResponseEntity
         .status(HttpStatus.OK)
-        .body(authMapper.jwtDtoFrom(result));
+        .body(result.jwtDto());
   }
 
   @Override
