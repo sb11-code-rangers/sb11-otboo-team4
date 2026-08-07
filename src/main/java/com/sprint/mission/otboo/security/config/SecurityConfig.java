@@ -31,7 +31,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 @EnableWebSecurity
-//@EnableMethodSecurity
 @EnableMethodSecurity(proxyTargetClass = true)   // 변경: 인터페이스(JDK) 프록시 대신 CGLIB로 고정
 public class SecurityConfig {
 
