@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.domain.social.follow.dto;
+package com.sprint.mission.otboo.domain.social.common.dto;
 
 import jakarta.validation.constraints.AssertTrue;
 import java.time.Instant;
