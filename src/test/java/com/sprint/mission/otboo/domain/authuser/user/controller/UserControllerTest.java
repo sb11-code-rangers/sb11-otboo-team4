@@ -118,7 +118,8 @@ class UserControllerTest {
     void 이미_가입된_이메일이면_409를_반환한다() throws Exception {
       // given
       UserCreateRequest request = new UserCreateRequest("hong@test.com", "password1", "홍길동");
-      willThrow(DuplicateEmailException.withEmail("hong@test.com")).given(userService).signUp(any());
+      willThrow(DuplicateEmailException.withEmail("hong@test.com")).given(userService)
+          .signUp(any());
 
       // when & then
       mockMvc.perform(post("/api/users")
@@ -133,32 +134,18 @@ class UserControllerTest {
   class GetProfile {
 
     @Test
-    @DisplayName("본인이면 200과 ProfileDto를 반환한다")
-    void 본인이면_200과_ProfileDto를_반환한다() throws Exception {
+    @DisplayName("응답_200과 ProfileDto를 반환한다")
+    void 응답_200과_ProfileDto를_반환한다() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
       SecurityContextHolder.getContext().setAuthentication(authenticationOf(userId));
       ProfileDto response = new ProfileDto(userId, "홍길동", null, null, null, 3, null);
-      given(userService.getProfile(userId, userId)).willReturn(response);
+      given(userService.getProfile(userId)).willReturn(response);
 
       // when & then
       mockMvc.perform(get("/api/users/{userId}/profiles", userId))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.name").value("홍길동"));
-    }
-
-    @Test
-    @DisplayName("본인이 아니면 403을 반환한다")
-    void 본인이_아니면_403을_반환한다() throws Exception {
-      // given
-      UUID userId = UUID.randomUUID();
-      UUID otherId = UUID.randomUUID();
-      SecurityContextHolder.getContext().setAuthentication(authenticationOf(otherId));
-      willThrow(AccessDeniedException.withNone()).given(userService).getProfile(userId, otherId);
-
-      // when & then
-      mockMvc.perform(get("/api/users/{userId}/profiles", userId))
-          .andExpect(status().isForbidden());
     }
   }
 
