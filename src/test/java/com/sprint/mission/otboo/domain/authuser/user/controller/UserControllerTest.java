@@ -147,6 +147,21 @@ class UserControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.name").value("홍길동"));
     }
+
+    @Test
+    @DisplayName("현재 로그인한 사용자과 관계 없이 타인 프로필 조회 시 응답_200과 ProfileDto를 반환한다")
+    void 현재_로그인한_사용자과_관계없이_타인_프로필_조회_시_응답_200과_ProfileDto를_반환한다() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      SecurityContextHolder.getContext().setAuthentication(authenticationOf(UUID.randomUUID()));
+      ProfileDto response = new ProfileDto(userId, "홍길동", null, null, null, 3, null);
+      given(userService.getProfile(userId)).willReturn(response);
+
+      // when & then
+      mockMvc.perform(get("/api/users/{userId}/profiles", userId))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.name").value("홍길동"));
+    }
   }
 
   @Nested
