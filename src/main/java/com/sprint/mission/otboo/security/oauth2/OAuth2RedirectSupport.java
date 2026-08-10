@@ -10,6 +10,8 @@ public class OAuth2RedirectSupport {
 
   public static void redirectWithError(HttpServletResponse response, String failureRedirectUri,
       String errorMessage) throws IOException {
-    response.sendRedirect(failureRedirectUri + "?error=oauth_failed&error_message=" + errorMessage);
+    String separator = failureRedirectUri.contains("?") ? "&" : "?";
+    response.sendRedirect(
+        failureRedirectUri + separator + "error=oauth_failed&error_message=" + errorMessage);
   }
 }
