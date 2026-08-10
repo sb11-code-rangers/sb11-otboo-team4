@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.EmailAlreadyRegisteredException;
 import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
@@ -20,6 +22,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
+import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.SocialAccountRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
@@ -180,6 +183,72 @@ class OAuth2SignInServiceTest {
       assertThat(captor.getValue().getProviderId()).isEqualTo("kakao-99");
       assertThat(captor.getValue().getProviderEmail()).isEqualTo("hong@gmail.com");
       verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
+    @DisplayName("이미 다른 사용자가 사용 중인 이메일이면 EmailAlreadyRegisteredException을 던진다")
+    void 이미_다른_사용자가_사용_중인_이메일이면_EmailAlreadyRegisteredException을_던진다() {
+      // given
+      UUID linkingUserId = UUID.randomUUID();
+      User owner = userWithId(UUID.randomUUID(), "다른사람", "shared@gmail.com");
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.GOOGLE, "google-2"))
+          .willReturn(Optional.empty());
+      given(userRepository.findByEmail("shared@gmail.com")).willReturn(Optional.of(owner));
+
+      // when & then
+      assertThatThrownBy(() -> oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-2", "shared@gmail.com", "홍길동", linkingUserId))
+          .isInstanceOf(EmailAlreadyRegisteredException.class);
+      verify(userRepository, never()).findById(any());
+      verify(socialAccountRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("연동하려는 이메일이 이미 자기 자신의 이메일이면 예외 없이 연동된다")
+    void 연동하려는_이메일이_이미_자기_자신의_이메일이면_예외_없이_연동된다() {
+      // given
+      UUID linkingUserId = UUID.randomUUID();
+      User linkingUser = userWithId(linkingUserId, "홍길동", "hong@gmail.com");
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.GOOGLE, "google-3"))
+          .willReturn(Optional.empty());
+      given(userRepository.findByEmail("hong@gmail.com")).willReturn(Optional.of(linkingUser));
+      given(userRepository.findById(linkingUserId)).willReturn(Optional.of(linkingUser));
+
+      given(clock.instant()).willReturn(NOW);
+      UUID sessionId = UUID.randomUUID();
+      UUID jti = UUID.randomUUID();
+      UserSession issued = new UserSession(linkingUserId, sessionId, jti, NOW);
+      given(userSessionRegistry.issue(linkingUserId, NOW)).willReturn(issued);
+      given(tokenProvider.createAccessToken(linkingUserId, sessionId, "USER", NOW))
+          .willReturn("access-token");
+      given(tokenProvider.createRefreshToken(linkingUserId, sessionId, jti, NOW))
+          .willReturn("refresh-token");
+      UserDto userDto = new UserDto(linkingUserId, null, "hong@gmail.com", "홍길동", Role.USER, false);
+      given(authMapper.signInDtoFrom(linkingUser, "access-token", "refresh-token"))
+          .willReturn(new SignInDto(new JwtDto(userDto, "access-token"), "refresh-token"));
+
+      // when & then
+      assertThatCode(() -> oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-3", "hong@gmail.com", "홍길동", linkingUserId))
+          .doesNotThrowAnyException();
+      verify(socialAccountRepository).save(any(SocialAccount.class));
+    }
+
+    @Test
+    @DisplayName("로그인된 사용자를 찾을 수 없으면 UserNotFoundException을 던진다")
+    void 로그인된_사용자를_찾을_수_없으면_UserNotFoundException을_던진다() {
+      // given
+      UUID linkingUserId = UUID.randomUUID();
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.GOOGLE, "google-6"))
+          .willReturn(Optional.empty());
+      given(userRepository.findByEmail("hong@gmail.com")).willReturn(Optional.empty());
+      given(userRepository.findById(linkingUserId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-6", "hong@gmail.com", "홍길동", linkingUserId))
+          .isInstanceOf(UserNotFoundException.class);
+      verify(socialAccountRepository, never()).save(any());
     }
   }
 
