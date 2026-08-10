@@ -67,10 +67,27 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     Map<String, Object> profile = kakaoAccount != null
         ? (Map<String, Object>) kakaoAccount.get("profile")
         : null;
-    String nickname = profile != null ? (String) profile.get("nickname") : null;
-    String email = kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
+    String nickname = profile != null && profile.get("nickname") != null
+        ? (String) profile.get("nickname")
+        : "kakao-user";
 
+    String email = resolveKakaoEmail(kakaoAccount, nickname, providerId);
     return new OAuth2Identity(OAuth2Provider.KAKAO, providerId, email, nickname);
+  }
+
+  // 카카오는 이메일 제공에 동의 안 했거나 인증되지 않은 이메일이면 kakao_account.email
+  // 자체가 없거나 신뢰할 수 없다. 이 경우 회원가입은 시켜야 하니 유일성이 보장되는
+  // providerId로 가상 이메일을 만든다.
+  private String resolveKakaoEmail(Map<String, Object> kakaoAccount, String nickname,
+      String providerId) {
+    if (kakaoAccount != null) {
+      Boolean emailVerified = (Boolean) kakaoAccount.get("is_email_verified");
+      Object email = kakaoAccount.get("email");
+      if (Boolean.TRUE.equals(emailVerified) && email != null) {
+        return (String) email;
+      }
+    }
+    return nickname + "_" + providerId + "@kakao.com";
   }
 
   private record OAuth2Identity(
