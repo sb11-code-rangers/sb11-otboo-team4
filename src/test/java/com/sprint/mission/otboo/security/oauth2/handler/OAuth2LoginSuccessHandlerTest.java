@@ -141,5 +141,42 @@ class OAuth2LoginSuccessHandlerTest {
       verify(oAuth2SignInService).signIn(
           OAuth2Provider.KAKAO, "123456789", "hong@gmail.com", "홍길동", null);
     }
+
+    @Test
+    @DisplayName("카카오 이메일이 인증되지 않은 경우 가상 이메일을 생성해 사용한다")
+    void 카카오_이메일이_인증되지_않은_경우_가상_이메일을_생성해_사용한다() throws Exception {
+      // given
+      Map<String, Object> kakaoAccount = kakaoAccount(false, "hong@gmail.com", "길동이");
+      OAuth2AuthenticationToken token = kakaoToken(987654321L, kakaoAccount, "kakao");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.KAKAO, "987654321", "길동이_987654321@kakao.com", "길동이", null))
+          .willReturn(signInDtoOf("길동이_987654321@kakao.com", "길동이"));
+
+      // when
+      successHandler.onAuthenticationSuccess(
+          new MockHttpServletRequest(), new MockHttpServletResponse(), token);
+
+      // then
+      verify(oAuth2SignInService).signIn(
+          OAuth2Provider.KAKAO, "987654321", "길동이_987654321@kakao.com", "길동이", null);
+    }
+
+    @Test
+    @DisplayName("카카오 계정 정보가 없으면 기본 닉네임으로 가상 이메일을 생성한다")
+    void 카카오_계정_정보가_없으면_기본_닉네임으로_가상_이메일을_생성한다() throws Exception {
+      // given
+      OAuth2AuthenticationToken token = kakaoToken(111L, null, "kakao");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.KAKAO, "111", "kakao-user_111@kakao.com", "kakao-user", null))
+          .willReturn(signInDtoOf("kakao-user_111@kakao.com", "kakao-user"));
+
+      // when
+      successHandler.onAuthenticationSuccess(
+          new MockHttpServletRequest(), new MockHttpServletResponse(), token);
+
+      // then
+      verify(oAuth2SignInService).signIn(
+          OAuth2Provider.KAKAO, "111", "kakao-user_111@kakao.com", "kakao-user", null);
+    }
   }
 }
