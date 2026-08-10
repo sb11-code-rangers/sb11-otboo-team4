@@ -30,6 +30,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
@@ -89,9 +90,10 @@ public class SecurityConfig {
     );
 
     http.exceptionHandling(ex -> ex
-        .authenticationEntryPoint((request, response, authException) ->
+        .defaultAuthenticationEntryPointFor((request, response, authException) ->
             ErrorResponseWriter.write(response, jsonMapper, HttpStatus.UNAUTHORIZED,
-                authException, "인증이 필요합니다."))
+                authException, "인증이 필요합니다."), AnyRequestMatcher.INSTANCE)
+        
         .accessDeniedHandler((request, response, accessDeniedException) ->
             ErrorResponseWriter.write(response, jsonMapper, HttpStatus.FORBIDDEN,
                 accessDeniedException, "접근 권한이 없습니다."))
