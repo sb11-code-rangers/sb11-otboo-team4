@@ -283,5 +283,24 @@ class OAuth2LoginSuccessHandlerTest {
       assertThat(response.getRedirectedUrl()).contains("error_message=account_locked");
       verify(refreshTokenCookieProvider, never()).attach(any(), any());
     }
+
+    @Test
+    @DisplayName("OAuth2FailureCode가 아닌 예외면 oauth_processing_failed로 리다이렉트한다")
+    void OAuth2FailureCode가_아닌_예외면_oauth_processing_failed로_리다이렉트한다() throws Exception {
+      // given
+      OAuth2AuthenticationToken token =
+          googleToken("google-sub-6", "hong@gmail.com", "홍길동", "google");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-sub-6", "hong@gmail.com", "홍길동", null))
+          .willThrow(new IllegalStateException("예상치 못한 오류"));
+
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      successHandler.onAuthenticationSuccess(new MockHttpServletRequest(), response, token);
+
+      // then
+      assertThat(response.getRedirectedUrl()).contains("error_message=oauth_processing_failed");
+    }
   }
 }
