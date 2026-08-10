@@ -3,7 +3,7 @@ package com.sprint.mission.otboo.domain.authuser.auth.exception;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 
-public class AccountLockedException extends AuthException{
+public class AccountLockedException extends AuthException implements OAuth2FailureCode {
 
   private static final String MESSAGE = "계정이 잠겨있습니다. 관리자에게 문의해주세요.";
 
@@ -13,5 +13,10 @@ public class AccountLockedException extends AuthException{
 
   public static AccountLockedException withNone() {
     return new AccountLockedException(Map.of(), null);
+  }
+
+  @Override
+  public String errorCode() {
+    return "account_locked";
   }
 }

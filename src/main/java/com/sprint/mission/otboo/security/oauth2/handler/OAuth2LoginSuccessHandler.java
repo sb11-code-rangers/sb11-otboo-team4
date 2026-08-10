@@ -2,6 +2,7 @@ package com.sprint.mission.otboo.security.oauth2.handler;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.LoginRequiredException;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.OAuth2FailureCode;
 import com.sprint.mission.otboo.domain.authuser.auth.service.OAuth2SignInService;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
 import com.sprint.mission.otboo.security.cookie.provider.RefreshTokenCookieProvider;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.util.WebUtils;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
@@ -63,9 +66,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
       refreshTokenCookieProvider.attach(response, result.refreshToken());
       response.sendRedirect(oAuth2Properties.successRedirectUri());
-    } catch (LoginRequiredException e) {
+    } catch (RuntimeException e) {
+      String errorMessage = (e instanceof OAuth2FailureCode failureCode)
+          ? failureCode.errorCode()
+          : "oauth_processing_failed";
+      log.warn("OAuth2 로그인 처리 실패: provider={}, reason={}", registrationId, errorMessage, e);
       OAuth2RedirectSupport.redirectWithError(response, oAuth2Properties.failureRedirectUri(),
-          "login_required");
+          errorMessage);
     }
   }
 

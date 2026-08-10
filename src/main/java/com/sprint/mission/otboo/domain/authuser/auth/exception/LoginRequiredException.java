@@ -3,7 +3,7 @@ package com.sprint.mission.otboo.domain.authuser.auth.exception;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 
-public class LoginRequiredException extends AuthException {
+public class LoginRequiredException extends AuthException implements OAuth2FailureCode {
 
   private static final String MESSAGE = "계정을 연동하려면 먼저 로그인해주세요.";
 
@@ -13,5 +13,10 @@ public class LoginRequiredException extends AuthException {
 
   public static LoginRequiredException withNone() {
     return new LoginRequiredException(Map.of(), null);
+  }
+
+  @Override
+  public String errorCode() {
+    return "login_required";
   }
 }
