@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
 import com.sprint.mission.otboo.domain.authuser.auth.service.OAuth2SignInService;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
@@ -256,6 +257,31 @@ class OAuth2LoginSuccessHandlerTest {
       // then
       assertThat(response.getRedirectedUrl()).contains("error_message=login_required");
       verify(oAuth2SignInService, never()).signIn(any(), any(), any(), any(), any());
+    }
+  }
+
+  @Nested
+  @DisplayName("로그인/연동 실패 처리")
+  class FailureHandling {
+
+    @Test
+    @DisplayName("OAuth2FailureCode를 구현한 예외면 해당 에러 코드로 실패 URI로 리다이렉트한다")
+    void OAuth2FailureCode를_구현한_예외면_해당_에러_코드로_실패_URI로_리다이렉트한다() throws Exception {
+      // given
+      OAuth2AuthenticationToken token =
+          googleToken("google-sub-5", "locked@gmail.com", "홍길동", "google");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-sub-5", "locked@gmail.com", "홍길동", null))
+          .willThrow(AccountLockedException.withNone());
+
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      successHandler.onAuthenticationSuccess(new MockHttpServletRequest(), response, token);
+
+      // then
+      assertThat(response.getRedirectedUrl()).contains("error_message=account_locked");
+      verify(refreshTokenCookieProvider, never()).attach(any(), any());
     }
   }
 }
