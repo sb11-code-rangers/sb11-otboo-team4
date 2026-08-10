@@ -42,5 +42,20 @@ class OAuth2RedirectSupportTest {
       assertThat(response.getRedirectedUrl())
           .isEqualTo("http://localhost:8080/#/?tab=login&error=oauth_failed&error_message=account_locked");
     }
+
+    @Test
+    @DisplayName("에러 메시지에 특수문자가 있으면 URL 인코딩해서 붙인다")
+    void 에러_메시지에_특수문자가_있으면_URL_인코딩해서_붙인다() throws Exception {
+      // given
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      OAuth2RedirectSupport.redirectWithError(
+          response, "http://localhost:8080/#/", "already used & invalid");
+
+      // then
+      assertThat(response.getRedirectedUrl())
+          .isEqualTo("http://localhost:8080/#/?error=oauth_failed&error_message=already+used+%26+invalid");
+    }
   }
 }
