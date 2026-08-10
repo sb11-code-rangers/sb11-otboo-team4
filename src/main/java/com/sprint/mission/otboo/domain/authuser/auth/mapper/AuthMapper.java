@@ -22,6 +22,14 @@ public class AuthMapper {
     );
   }
 
+  // OAuth2SignInService는 UserDto가 아니라 User 엔티티를 그대로 들고 있어서 오버로드가 필요하다.
+  public SignInDto signInDtoFrom(User user, String accessToken, String refreshToken) {
+    return new SignInDto(
+        new JwtDto(userMapper.userDtoFrom(user), accessToken),
+        refreshToken
+    );
+  }
+
   public RefreshDto refreshDtoFrom(User user, String accessToken, String refreshToken) {
     return new RefreshDto(
         new JwtDto(userMapper.userDtoFrom(user), accessToken),
