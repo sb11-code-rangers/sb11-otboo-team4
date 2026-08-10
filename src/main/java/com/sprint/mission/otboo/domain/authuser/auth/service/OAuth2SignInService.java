@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.auth.service;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
 import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.SocialAccount;
@@ -42,6 +43,10 @@ public class OAuth2SignInService {
 
     User user = findLinkedUser(provider, providerId)
         .orElseGet(() -> createSocialUser(provider, providerId, providerEmail, providerName));
+
+    if (user.isLocked()) {
+      throw AccountLockedException.withNone();
+    }
 
     Instant now = Instant.now(clock);
     UserSession issued = userSessionRegistry.issue(user.getId(), now);
