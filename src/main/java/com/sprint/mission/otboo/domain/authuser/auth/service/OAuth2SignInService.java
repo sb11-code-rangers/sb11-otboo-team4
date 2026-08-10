@@ -2,6 +2,7 @@ package com.sprint.mission.otboo.domain.authuser.auth.service;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.EmailAlreadyRegisteredException;
 import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.SocialAccount;
@@ -70,6 +71,12 @@ public class OAuth2SignInService {
   // 연동 전용 진입점(-link) - 비밀번호는 안 건드리고 현재 로그인된 사용자에게 그대로 연동.
   private User linkToLoggedInUser(UUID linkingUserId, OAuth2Provider provider, String providerId,
       String email) {
+    userRepository.findByEmail(email)
+        .filter(owner -> !owner.getId().equals(linkingUserId))
+        .ifPresent(owner -> {
+          throw EmailAlreadyRegisteredException.withEmail(email);
+        });
+
     User linkingUser = userRepository.findById(linkingUserId)
         .orElseThrow(UserNotFoundException::withNone);
     socialAccountRepository.save(SocialAccount.link(linkingUser, provider, providerId, email));
