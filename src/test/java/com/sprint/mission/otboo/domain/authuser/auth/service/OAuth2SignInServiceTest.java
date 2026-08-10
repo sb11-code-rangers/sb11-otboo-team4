@@ -115,7 +115,7 @@ class OAuth2SignInServiceTest {
 
       // when
       SignInDto result = oAuth2SignInService.signIn(
-          OAuth2Provider.GOOGLE, "google-sub-1", "hong@gmail.com", "홍길동");
+          OAuth2Provider.GOOGLE, "google-sub-1", "hong@gmail.com", "홍길동", null);
 
       // then
       assertThat(result).isEqualTo(expected);
@@ -135,9 +135,51 @@ class OAuth2SignInServiceTest {
 
       // when & then
       assertThatThrownBy(() -> oAuth2SignInService.signIn(
-          OAuth2Provider.KAKAO, "1234567", "user_1234567@kakao.com", "kakao-user"))
+          OAuth2Provider.KAKAO, "1234567", "user_1234567@kakao.com", "kakao-user", null))
           .isInstanceOf(AccountLockedException.class);
       verify(userSessionRegistry, never()).issue(any(), any());
+    }
+  }
+
+  @Nested
+  @DisplayName("계정 연동 (-link 진입점)")
+  class ExplicitLink {
+
+    @Test
+    @DisplayName("로그인된 사용자에게 소셜 계정을 연동한다")
+    void 로그인된_사용자에게_소셜_계정을_연동한다() {
+      // given
+      UUID linkingUserId = UUID.randomUUID();
+      User linkingUser = userWithId(linkingUserId, "홍길동", "hong@test.com");
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.KAKAO, "kakao-99"))
+          .willReturn(Optional.empty());
+      given(userRepository.findById(linkingUserId)).willReturn(Optional.of(linkingUser));
+
+      given(clock.instant()).willReturn(NOW);
+      UUID sessionId = UUID.randomUUID();
+      UUID jti = UUID.randomUUID();
+      UserSession issued = new UserSession(linkingUserId, sessionId, jti, NOW);
+      given(userSessionRegistry.issue(linkingUserId, NOW)).willReturn(issued);
+      given(tokenProvider.createAccessToken(linkingUserId, sessionId, "USER", NOW))
+          .willReturn("access-token");
+      given(tokenProvider.createRefreshToken(linkingUserId, sessionId, jti, NOW))
+          .willReturn("refresh-token");
+      UserDto userDto = new UserDto(linkingUserId, null, "hong@test.com", "홍길동", Role.USER, false);
+      given(authMapper.signInDtoFrom(linkingUser, "access-token", "refresh-token"))
+          .willReturn(new SignInDto(new JwtDto(userDto, "access-token"), "refresh-token"));
+
+      // when
+      oAuth2SignInService.signIn(
+          OAuth2Provider.KAKAO, "kakao-99", "hong@gmail.com", "카카오닉네임", linkingUserId);
+
+      // then
+      ArgumentCaptor<SocialAccount> captor = ArgumentCaptor.forClass(SocialAccount.class);
+      verify(socialAccountRepository).save(captor.capture());
+      assertThat(captor.getValue().getUser()).isEqualTo(linkingUser);
+      assertThat(captor.getValue().getProvider()).isEqualTo(OAuth2Provider.KAKAO);
+      assertThat(captor.getValue().getProviderId()).isEqualTo("kakao-99");
+      assertThat(captor.getValue().getProviderEmail()).isEqualTo("hong@gmail.com");
+      verify(passwordEncoder, never()).encode(any());
     }
   }
 
@@ -170,7 +212,7 @@ class OAuth2SignInServiceTest {
           .willReturn(new SignInDto(new JwtDto(userDto, "access-token"), "refresh-token"));
 
       // when
-      oAuth2SignInService.signIn(OAuth2Provider.GOOGLE, "google-4", "hong@gmail.com", "홍길동");
+      oAuth2SignInService.signIn(OAuth2Provider.GOOGLE, "google-4", "hong@gmail.com", "홍길동", null);
 
       // then
       assertThat(existingUser.getPassword()).isEqualTo("random-encoded-password");
@@ -194,7 +236,7 @@ class OAuth2SignInServiceTest {
 
       // when & then
       assertThatThrownBy(() -> oAuth2SignInService.signIn(
-          OAuth2Provider.GOOGLE, "google-5", "race@gmail.com", "홍길동"))
+          OAuth2Provider.GOOGLE, "google-5", "race@gmail.com", "홍길동", null))
           .isInstanceOf(DuplicateEmailException.class);
       verify(profileRepository, never()).save(any());
       verify(socialAccountRepository, never()).save(any());
@@ -233,7 +275,7 @@ class OAuth2SignInServiceTest {
 
       // when
       SignInDto result = oAuth2SignInService.signIn(
-          OAuth2Provider.KAKAO, "kakao-1", "길동이_kakao-1@kakao.com", "길동이");
+          OAuth2Provider.KAKAO, "kakao-1", "길동이_kakao-1@kakao.com", "길동이", null);
 
       // then
       assertThat(result).isEqualTo(expected);
