@@ -312,6 +312,26 @@ class OAuth2SignInServiceTest {
     }
 
     @Test
+    @DisplayName("병합된 계정이 잠겨있으면 AccountLockedException을 던진다")
+    void 병합된_계정이_잠겨있으면_AccountLockedException을_던진다() {
+      // given
+      User lockedUser = userWithId(UUID.randomUUID(), "홍길동", "locked@gmail.com");
+      lockedUser.lock(LockReason.ADMIN_ACTION);
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.GOOGLE, "google-7"))
+          .willReturn(Optional.empty());
+      given(userRepository.findByEmail("locked@gmail.com")).willReturn(Optional.of(lockedUser));
+      given(passwordEncoder.encode(any())).willReturn("random-encoded-password");
+
+      // when & then
+      // 비밀번호 무효화/세션 회수는 잠금 체크보다 먼저 일어난다 - 로그인만 최종 거부됨
+      assertThatThrownBy(() -> oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-7", "locked@gmail.com", "홍길동", null))
+          .isInstanceOf(AccountLockedException.class);
+      verify(userSessionRegistry).revokeAll(lockedUser.getId());
+      verify(userSessionRegistry, never()).issue(any(), any());
+    }
+
+    @Test
     @DisplayName("이메일이 가입되어 있지 않으면 새 계정을 생성한다")
     void 이메일이_가입되어_있지_않으면_새_계정을_생성한다() {
       // given
