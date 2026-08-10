@@ -8,6 +8,8 @@ import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistr
 import com.sprint.mission.otboo.security.details.CustomUserDetailsService;
 import com.sprint.mission.otboo.security.exception.ErrorResponseWriter;
 import com.sprint.mission.otboo.security.filter.TokenAuthenticationFilter;
+import com.sprint.mission.otboo.security.oauth2.handler.OAuth2LoginFailureHandler;
+import com.sprint.mission.otboo.security.oauth2.handler.OAuth2LoginSuccessHandler;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +27,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.session.NullAuthenticatedSessionStrategy;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import tools.jackson.databind.json.JsonMapper;
@@ -57,7 +60,9 @@ public class SecurityConfig {
       HttpSecurity http,
       JsonMapper jsonMapper,
       TokenProvider tokenProvider,
-      UserSessionRegistry userSessionRegistry
+      UserSessionRegistry userSessionRegistry,
+      OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+      OAuth2LoginFailureHandler oAuth2LoginFailureHandler
   ) throws Exception {
 
     http.formLogin(AbstractHttpConfigurer::disable);
@@ -68,6 +73,10 @@ public class SecurityConfig {
         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler())
         .ignoringRequestMatchers("/ws/**")
+        // STATELESS라도 SessionManagementFilter는 모든 인증된 요청을 "새 로그인"으로 보고
+        // 세션 인증 전략을 매번 다시 태운다. 기본 전략은 세션을 건드리려다 CSRF 토큰까지
+        // 갈아치워서 로그인 성공 직후 요청이 다시 CSRF 실패로 튕기는 루프가 생겼다.
+        .sessionAuthenticationStrategy(new NullAuthenticatedSessionStrategy())
     );
 
     http.sessionManagement(session -> session
@@ -110,7 +119,10 @@ public class SecurityConfig {
         .anyRequest().authenticated()
     );
 
-    // TODO: OAuth2 설정 추가
+    http.oauth2Login(oauth2 -> oauth2
+        .successHandler(oAuth2LoginSuccessHandler)
+        .failureHandler(oAuth2LoginFailureHandler)
+    );
 
     return http.build();
   }
