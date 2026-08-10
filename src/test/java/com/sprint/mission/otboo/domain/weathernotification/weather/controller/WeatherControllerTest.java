@@ -14,16 +14,19 @@ import com.sprint.mission.otboo.domain.weathernotification.weather.dto.WeatherDt
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.SkyStatus;
 import com.sprint.mission.otboo.domain.weathernotification.weather.exception.InvalidCoordinateException;
 import com.sprint.mission.otboo.domain.weathernotification.weather.service.WeatherService;
+import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(WeatherController.class)
+@Import(NoSecurityTestConfig.class)
 class WeatherControllerTest {
 
   private static final FixtureMonkey FIXTURE_MONKEY = FixtureMonkey.builder()

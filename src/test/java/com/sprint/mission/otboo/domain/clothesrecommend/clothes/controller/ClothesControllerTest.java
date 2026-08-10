@@ -17,6 +17,7 @@ import com.sprint.mission.otboo.domain.clothesrecommend.clothes.dto.ClothesType;
 import com.sprint.mission.otboo.domain.clothesrecommend.clothes.dto.ClothesUpdateRequest;
 import com.sprint.mission.otboo.domain.clothesrecommend.clothes.exception.ClothesNotFoundException;
 import com.sprint.mission.otboo.domain.clothesrecommend.clothes.service.ClothesService;
+import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -33,6 +35,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(ClothesController.class)
+@Import(NoSecurityTestConfig.class)
 @WithMockUser
 @DisplayName("ClothesController")
 class ClothesControllerTest {

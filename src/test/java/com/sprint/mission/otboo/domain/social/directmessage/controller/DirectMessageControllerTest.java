@@ -12,6 +12,7 @@ import com.sprint.mission.otboo.domain.social.common.dto.UserSummary;
 import com.sprint.mission.otboo.domain.social.directmessage.dto.DirectMessageDto;
 import com.sprint.mission.otboo.domain.social.directmessage.dto.DirectMessageParams;
 import com.sprint.mission.otboo.domain.social.directmessage.service.DirectMessageService;
+import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import com.sprint.mission.otboo.security.details.UserPrincipal;
@@ -37,7 +38,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @WebMvcTest(DirectMessageController.class)
-@Import(DirectMessageControllerTest.SecurityArgumentResolverConfig.class)
+@Import({DirectMessageControllerTest.SecurityArgumentResolverConfig.class, NoSecurityTestConfig.class})
 @DisplayName("DirectMessageController")
 class DirectMessageControllerTest {
 

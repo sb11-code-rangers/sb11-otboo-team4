@@ -26,6 +26,7 @@ import com.sprint.mission.otboo.domain.social.follow.exception.FollowForbiddenEx
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowNotFoundException;
 import com.sprint.mission.otboo.domain.social.follow.service.FollowService;
 import com.sprint.mission.otboo.security.details.UserPrincipal;
+import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import java.util.List;
@@ -52,7 +53,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.ObjectMapper;
 
 @WebMvcTest(FollowController.class)
-@Import(FollowControllerTest.SecurityArgumentResolverConfig.class)
+@Import({FollowControllerTest.SecurityArgumentResolverConfig.class, NoSecurityTestConfig.class})
 @DisplayName("FollowController")
 class FollowControllerTest {
 

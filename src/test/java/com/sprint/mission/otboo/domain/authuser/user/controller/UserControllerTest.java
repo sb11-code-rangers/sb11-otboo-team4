@@ -20,6 +20,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.AccessDeniedException;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
 import com.sprint.mission.otboo.domain.authuser.user.service.UserService;
+import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.security.details.UserPrincipal;
 import java.time.Instant;
 import java.util.List;
@@ -46,7 +47,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.ObjectMapper;
 
 @WebMvcTest(UserController.class)
-@Import(UserControllerTest.SecurityArgumentResolverConfig.class)
+@Import({UserControllerTest.SecurityArgumentResolverConfig.class, NoSecurityTestConfig.class})
 @DisplayName("UserController")
 class UserControllerTest {
 
