@@ -7,6 +7,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.SocialAccount;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
+import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.SocialAccountRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,7 +86,15 @@ public class OAuth2SignInService {
   private User createSocialUser(OAuth2Provider provider, String providerId, String email,
       String name) {
     User newUser = User.create(name, email, passwordEncoder.encode(UUID.randomUUID().toString()));
-    User savedUser = userRepository.saveAndFlush(newUser);
+
+    User savedUser;
+    try {
+      savedUser = userRepository.saveAndFlush(newUser);
+    } catch (DataIntegrityViolationException e) {
+      // findByEmail 확인과 저장 사이에 다른 요청이 같은 이메일로 먼저 가입한 경우.
+      throw DuplicateEmailException.withEmail(email);
+    }
+
     profileRepository.save(Profile.create(savedUser));
     socialAccountRepository.save(SocialAccount.link(savedUser, provider, providerId, email));
     return savedUser;
