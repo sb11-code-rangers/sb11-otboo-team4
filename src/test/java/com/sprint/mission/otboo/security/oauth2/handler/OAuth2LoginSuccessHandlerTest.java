@@ -1,7 +1,9 @@
 package com.sprint.mission.otboo.security.oauth2.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
@@ -13,6 +15,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.security.cookie.provider.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.security.oauth2.properties.OAuth2Properties;
 import com.sprint.mission.otboo.security.token.dto.RefreshTokenClaims;
+import com.sprint.mission.otboo.security.token.exception.business.InvalidRefreshTokenException;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
@@ -213,6 +216,46 @@ class OAuth2LoginSuccessHandlerTest {
       // then
       verify(oAuth2SignInService).signIn(
           OAuth2Provider.GOOGLE, "google-sub-2", "hong@gmail.com", "홍길동", loggedInUserId);
+    }
+
+    @Test
+    @DisplayName("REFRESH_TOKEN 쿠키가 없으면 login_required 에러로 실패 URI로 리다이렉트한다")
+    void REFRESH_TOKEN_쿠키가_없으면_login_required_에러로_실패_URI로_리다이렉트한다() throws Exception {
+      // given
+      OAuth2AuthenticationToken token =
+          googleToken("google-sub-3", "hong@gmail.com", "홍길동", "google-link");
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      successHandler.onAuthenticationSuccess(request, response, token);
+
+      // then
+      assertThat(response.getRedirectedUrl())
+          .startsWith(FAILURE_URI)
+          .contains("error_message=login_required");
+      verify(oAuth2SignInService, never()).signIn(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("REFRESH_TOKEN 쿠키 값이 유효하지 않으면 login_required 에러로 실패 URI로 리다이렉트한다")
+    void REFRESH_TOKEN_쿠키_값이_유효하지_않으면_login_required_에러로_실패_URI로_리다이렉트한다() throws Exception {
+      // given
+      given(tokenProvider.parseRefreshToken("invalid-token"))
+          .willThrow(InvalidRefreshTokenException.withNone());
+
+      OAuth2AuthenticationToken token =
+          googleToken("google-sub-4", "hong@gmail.com", "홍길동", "google-link");
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      request.setCookies(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "invalid-token"));
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      successHandler.onAuthenticationSuccess(request, response, token);
+
+      // then
+      assertThat(response.getRedirectedUrl()).contains("error_message=login_required");
+      verify(oAuth2SignInService, never()).signIn(any(), any(), any(), any(), any());
     }
   }
 }
