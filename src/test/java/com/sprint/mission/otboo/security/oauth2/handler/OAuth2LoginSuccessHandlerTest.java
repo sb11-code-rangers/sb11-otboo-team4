@@ -64,6 +64,30 @@ class OAuth2LoginSuccessHandlerTest {
     return new OAuth2AuthenticationToken(oAuth2User, oAuth2User.getAuthorities(), registrationId);
   }
 
+  private OAuth2AuthenticationToken kakaoToken(Long id, Map<String, Object> kakaoAccount,
+      String registrationId) {
+    Map<String, Object> attributes = new HashMap<>();
+    attributes.put("id", id);
+    if (kakaoAccount != null) {
+      attributes.put("kakao_account", kakaoAccount);
+    }
+    OAuth2User oAuth2User = new DefaultOAuth2User(
+        List.of(new SimpleGrantedAuthority("ROLE_USER")), attributes, "id");
+    return new OAuth2AuthenticationToken(oAuth2User, oAuth2User.getAuthorities(), registrationId);
+  }
+
+  private Map<String, Object> kakaoAccount(boolean emailVerified, String email, String nickname) {
+    Map<String, Object> profile = new HashMap<>();
+    profile.put("nickname", nickname);
+    Map<String, Object> account = new HashMap<>();
+    account.put("profile", profile);
+    account.put("is_email_verified", emailVerified);
+    if (email != null) {
+      account.put("email", email);
+    }
+    return account;
+  }
+
   private SignInDto signInDtoOf(String email, String name) {
     UserDto userDto = new UserDto(UUID.randomUUID(), Instant.now(), email, name, Role.USER, false);
     return new SignInDto(new JwtDto(userDto, "access-token"), "refresh-token");
@@ -92,6 +116,30 @@ class OAuth2LoginSuccessHandlerTest {
       // then
       verify(refreshTokenCookieProvider).attach(response, signInDto.refreshToken());
       assertThat(response.getRedirectedUrl()).isEqualTo(SUCCESS_URI);
+    }
+  }
+
+  @Nested
+  @DisplayName("카카오 로그인")
+  class KakaoLogin {
+
+    @Test
+    @DisplayName("카카오 id가 숫자여도 문자열로 변환해 SignInService에 전달한다")
+    void 카카오_id가_숫자여도_문자열로_변환해_SignInService에_전달한다() throws Exception {
+      // given
+      Map<String, Object> kakaoAccount = kakaoAccount(true, "hong@gmail.com", "홍길동");
+      OAuth2AuthenticationToken token = kakaoToken(123456789L, kakaoAccount, "kakao");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.KAKAO, "123456789", "hong@gmail.com", "홍길동", null))
+          .willReturn(signInDtoOf("hong@gmail.com", "홍길동"));
+
+      // when
+      successHandler.onAuthenticationSuccess(
+          new MockHttpServletRequest(), new MockHttpServletResponse(), token);
+
+      // then
+      verify(oAuth2SignInService).signIn(
+          OAuth2Provider.KAKAO, "123456789", "hong@gmail.com", "홍길동", null);
     }
   }
 }
