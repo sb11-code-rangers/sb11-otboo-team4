@@ -12,6 +12,9 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.security.cookie.provider.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.security.oauth2.properties.OAuth2Properties;
+import com.sprint.mission.otboo.security.token.dto.RefreshTokenClaims;
+import com.sprint.mission.otboo.security.token.provider.TokenProvider;
+import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -44,13 +47,16 @@ class OAuth2LoginSuccessHandlerTest {
   @Mock
   private RefreshTokenCookieProvider refreshTokenCookieProvider;
 
+  @Mock
+  private TokenProvider tokenProvider;
+
   private OAuth2LoginSuccessHandler successHandler;
 
   @BeforeEach
   void setUp() {
     OAuth2Properties oAuth2Properties = new OAuth2Properties(SUCCESS_URI, FAILURE_URI);
     successHandler = new OAuth2LoginSuccessHandler(
-        oAuth2SignInService, refreshTokenCookieProvider, oAuth2Properties);
+        oAuth2SignInService, refreshTokenCookieProvider, oAuth2Properties, tokenProvider);
   }
 
   private OAuth2AuthenticationToken googleToken(String sub, String email, String name,
@@ -177,6 +183,36 @@ class OAuth2LoginSuccessHandlerTest {
       // then
       verify(oAuth2SignInService).signIn(
           OAuth2Provider.KAKAO, "111", "kakao-user_111@kakao.com", "kakao-user", null);
+    }
+  }
+
+  @Nested
+  @DisplayName("계정 연동 (-link 진입점)")
+  class ExplicitLink {
+
+    @Test
+    @DisplayName("REFRESH_TOKEN 쿠키가 유효하면 해당 사용자 ID로 연동을 요청한다")
+    void REFRESH_TOKEN_쿠키가_유효하면_해당_사용자_ID로_연동을_요청한다() throws Exception {
+      // given
+      UUID loggedInUserId = UUID.randomUUID();
+      given(tokenProvider.parseRefreshToken("valid-refresh-token"))
+          .willReturn(new RefreshTokenClaims(loggedInUserId, UUID.randomUUID(), UUID.randomUUID()));
+
+      OAuth2AuthenticationToken token =
+          googleToken("google-sub-2", "hong@gmail.com", "홍길동", "google-link");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-sub-2", "hong@gmail.com", "홍길동", loggedInUserId))
+          .willReturn(signInDtoOf("hong@gmail.com", "홍길동"));
+
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      request.setCookies(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "valid-refresh-token"));
+
+      // when
+      successHandler.onAuthenticationSuccess(request, new MockHttpServletResponse(), token);
+
+      // then
+      verify(oAuth2SignInService).signIn(
+          OAuth2Provider.GOOGLE, "google-sub-2", "hong@gmail.com", "홍길동", loggedInUserId);
     }
   }
 }
