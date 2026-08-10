@@ -8,6 +8,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.SocialAccount;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
 import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
+import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.SocialAccountRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
@@ -40,10 +41,12 @@ public class OAuth2SignInService {
 
   @Transactional
   public SignInDto signIn(OAuth2Provider provider, String providerId, String providerEmail,
-      String providerName) {
+      String providerName, UUID explicitLinkUserId) {
 
     User user = findLinkedUser(provider, providerId)
-        .orElseGet(() -> resolveAnonymousUser(provider, providerId, providerEmail, providerName));
+        .orElseGet(() -> explicitLinkUserId != null
+            ? linkToLoggedInUser(explicitLinkUserId, provider, providerId, providerEmail)
+            : resolveAnonymousUser(provider, providerId, providerEmail, providerName));
 
     if (user.isLocked()) {
       throw AccountLockedException.withNone();
@@ -62,6 +65,15 @@ public class OAuth2SignInService {
   private Optional<User> findLinkedUser(OAuth2Provider provider, String providerId) {
     return socialAccountRepository.findByProviderAndProviderId(provider, providerId)
         .map(SocialAccount::getUser);
+  }
+
+  // 연동 전용 진입점(-link) - 비밀번호는 안 건드리고 현재 로그인된 사용자에게 그대로 연동.
+  private User linkToLoggedInUser(UUID linkingUserId, OAuth2Provider provider, String providerId,
+      String email) {
+    User linkingUser = userRepository.findById(linkingUserId)
+        .orElseThrow(UserNotFoundException::withNone);
+    socialAccountRepository.save(SocialAccount.link(linkingUser, provider, providerId, email));
+    return linkingUser;
   }
 
   // 로그인 화면에서의 익명 시도 - 이메일이 이미 가입되어 있으면 병합, 없으면 새로 만든다.
