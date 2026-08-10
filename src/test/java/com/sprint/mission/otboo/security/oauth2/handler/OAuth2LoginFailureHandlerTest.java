@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 
@@ -45,6 +46,21 @@ class OAuth2LoginFailureHandlerTest {
       assertThat(response.getRedirectedUrl())
           .startsWith(FAILURE_URI)
           .contains("error_message=invalid_request");
+    }
+
+    @Test
+    @DisplayName("OAuth2AuthenticationException이 아니면 unknown_error로 리다이렉트한다")
+    void OAuth2AuthenticationException이_아니면_unknown_error로_리다이렉트한다() throws Exception {
+      // given
+      BadCredentialsException exception = new BadCredentialsException("자격 증명 실패");
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      failureHandler.onAuthenticationFailure(request, response, exception);
+
+      // then
+      assertThat(response.getRedirectedUrl()).contains("error_message=unknown_error");
     }
   }
 }
