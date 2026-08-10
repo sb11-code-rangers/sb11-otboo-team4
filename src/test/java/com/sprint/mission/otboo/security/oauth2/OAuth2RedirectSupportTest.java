@@ -27,5 +27,20 @@ class OAuth2RedirectSupportTest {
       assertThat(response.getRedirectedUrl())
           .isEqualTo("http://localhost:8080/#/?error=oauth_failed&error_message=login_required");
     }
+
+    @Test
+    @DisplayName("이미 쿼리 파라미터가 있는 URI면 앰퍼샌드로 에러를 붙인다")
+    void 이미_쿼리_파라미터가_있는_URI면_앰퍼샌드로_에러를_붙인다() throws Exception {
+      // given
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      OAuth2RedirectSupport.redirectWithError(
+          response, "http://localhost:8080/#/?tab=login", "account_locked");
+
+      // then
+      assertThat(response.getRedirectedUrl())
+          .isEqualTo("http://localhost:8080/#/?tab=login&error=oauth_failed&error_message=account_locked");
+    }
   }
 }
