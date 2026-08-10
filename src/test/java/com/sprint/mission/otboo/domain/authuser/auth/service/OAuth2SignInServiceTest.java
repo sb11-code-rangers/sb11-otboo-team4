@@ -19,6 +19,7 @@ import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
+import com.sprint.mission.otboo.domain.authuser.user.exception.DuplicateEmailException;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.SocialAccountRepository;
 import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
@@ -37,6 +38,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -177,6 +179,25 @@ class OAuth2SignInServiceTest {
       verify(socialAccountRepository).save(captor.capture());
       assertThat(captor.getValue().getUser()).isEqualTo(existingUser);
       assertThat(captor.getValue().getProviderEmail()).isEqualTo("hong@gmail.com");
+    }
+
+    @Test
+    @DisplayName("동시에 같은 이메일로 가입 시도해 무결성 예외가 발생하면 DuplicateEmailException으로 변환한다")
+    void 동시에_같은_이메일로_가입_시도해_무결성_예외가_발생하면_DuplicateEmailException으로_변환한다() {
+      // given
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.GOOGLE, "google-5"))
+          .willReturn(Optional.empty());
+      given(userRepository.findByEmail("race@gmail.com")).willReturn(Optional.empty());
+      given(passwordEncoder.encode(any())).willReturn("random-encoded-password");
+      given(userRepository.saveAndFlush(any(User.class)))
+          .willThrow(new DataIntegrityViolationException("unique constraint violated"));
+
+      // when & then
+      assertThatThrownBy(() -> oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-5", "race@gmail.com", "홍길동"))
+          .isInstanceOf(DuplicateEmailException.class);
+      verify(profileRepository, never()).save(any());
+      verify(socialAccountRepository, never()).save(any());
     }
 
     @Test
