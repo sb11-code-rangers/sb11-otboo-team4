@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.domain.authuser.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -9,11 +10,13 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
 import com.sprint.mission.otboo.domain.authuser.auth.mapper.AuthMapper;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.SocialAccount;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
+import com.sprint.mission.otboo.domain.authuser.user.entity.enums.LockReason;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.repository.ProfileRepository;
@@ -114,6 +117,24 @@ class OAuth2SignInServiceTest {
       // then
       assertThat(result).isEqualTo(expected);
       verify(userRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    @DisplayName("연동된 계정이 잠겨있으면 AccountLockedException을 던진다")
+    void 연동된_계정이_잠겨있으면_AccountLockedException을_던진다() {
+      // given
+      User lockedUser = userWithId(UUID.randomUUID(), "홍길동", "hong@test.com");
+      lockedUser.lock(LockReason.ADMIN_ACTION);
+      SocialAccount linkedAccount = SocialAccount.link(lockedUser, OAuth2Provider.KAKAO,
+          "1234567", "user_1234567@kakao.com");
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.KAKAO, "1234567"))
+          .willReturn(Optional.of(linkedAccount));
+
+      // when & then
+      assertThatThrownBy(() -> oAuth2SignInService.signIn(
+          OAuth2Provider.KAKAO, "1234567", "user_1234567@kakao.com", "kakao-user"))
+          .isInstanceOf(AccountLockedException.class);
+      verify(userSessionRegistry, never()).issue(any(), any());
     }
   }
 
