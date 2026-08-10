@@ -18,8 +18,8 @@ class RefreshTokenCookieProviderTest {
   class Attach {
 
     @Test
-    @DisplayName("refreshToken을 HttpOnly/SameSite=Strict/지정된 경로의 쿠키로 응답 헤더에 담는다")
-    void refreshToken을_HttpOnly_SameSite_Strict_지정된_경로의_쿠키로_응답_헤더에_담는다() {
+    @DisplayName("refreshToken을 HttpOnly/SameSite=Lax/루트 경로의 쿠키로 응답 헤더에 담는다")
+    void refreshToken을_HttpOnly_SameSite_Lax_루트_경로의_쿠키로_응답_헤더에_담는다() {
       // given
       RefreshTokenCookieProperties properties =
           new RefreshTokenCookieProperties(Duration.ofDays(14), false);
@@ -33,8 +33,8 @@ class RefreshTokenCookieProviderTest {
       String setCookie = response.getHeader(HttpHeaders.SET_COOKIE);
       assertThat(setCookie).contains("REFRESH_TOKEN=raw-refresh-token");
       assertThat(setCookie).contains("HttpOnly");
-      assertThat(setCookie).contains("SameSite=Strict");
-      assertThat(setCookie).contains("Path=/api/auth");
+      assertThat(setCookie).contains("SameSite=Lax");
+      assertThat(setCookie).contains("Path=/");
       assertThat(setCookie).contains("Max-Age=" + Duration.ofDays(14).toSeconds());
     }
 

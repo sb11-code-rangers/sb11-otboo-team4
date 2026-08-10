@@ -29,8 +29,8 @@ public class RefreshTokenCookieProvider {
     return ResponseCookie.from(REFRESH_TOKEN, value)
         .httpOnly(true)
         .secure(cookieProperties.secure())
-        .sameSite("Strict")
-        .path("/api/auth")
+        .sameSite("Lax")
+        .path("/")   // 변경: /api/auth -> / (OAuth2 콜백 경로에도 쿠키가 실려야 함)
         .maxAge(maxAge)
         .build();
   }
