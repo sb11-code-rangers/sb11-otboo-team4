@@ -5,24 +5,31 @@ import com.sprint.mission.otboo.domain.authuser.auth.service.OAuth2SignInService
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
 import com.sprint.mission.otboo.security.cookie.provider.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.security.oauth2.properties.OAuth2Properties;
+import com.sprint.mission.otboo.security.token.provider.TokenProvider;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.WebUtils;
 
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
+  private static final String LINK_SUFFIX = "-link";
+
   private final OAuth2SignInService oAuth2SignInService;
   private final RefreshTokenCookieProvider refreshTokenCookieProvider;
   private final OAuth2Properties oAuth2Properties;
+  private final TokenProvider tokenProvider;
 
   @Override
   public void onAuthenticationSuccess(
@@ -33,15 +40,29 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
     OAuth2User oAuth2User = token.getPrincipal();
-    String registrationId = token.getAuthorizedClientRegistrationId();
+    String registrationId = token.getAuthorizedClientRegistrationId(); // google | google-link | kakao | kakao-link
 
-    OAuth2Identity identity = resolveIdentity(registrationId, oAuth2User);
+    boolean explicitLink = registrationId.endsWith(LINK_SUFFIX);
+    String baseProvider = explicitLink
+        ? registrationId.substring(0, registrationId.length() - LINK_SUFFIX.length())
+        : registrationId;
+
+    OAuth2Identity identity = resolveIdentity(baseProvider, oAuth2User);
+
+    // 연동 전용 진입점일 때만 쿠키를 확인한다 - 로그인 화면 쪽은 쿠키를 아예 안 본다.
+    UUID explicitLinkUserId = explicitLink ? resolveLoggedInUserId(request) : null;
 
     SignInDto result = oAuth2SignInService.signIn(
-        identity.provider(), identity.providerId(), identity.email(), identity.name(), null);
+        identity.provider(), identity.providerId(), identity.email(), identity.name(),
+        explicitLinkUserId);
 
     refreshTokenCookieProvider.attach(response, result.refreshToken());
     response.sendRedirect(oAuth2Properties.successRedirectUri());
+  }
+
+  private UUID resolveLoggedInUserId(HttpServletRequest request) {
+    Cookie cookie = WebUtils.getCookie(request, RefreshTokenCookieProvider.REFRESH_TOKEN);
+    return tokenProvider.parseRefreshToken(cookie.getValue()).userId();
   }
 
   private OAuth2Identity resolveIdentity(String provider, OAuth2User oAuth2User) {
