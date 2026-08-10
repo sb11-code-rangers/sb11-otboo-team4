@@ -1,10 +1,13 @@
 package com.sprint.mission.otboo.security.oauth2.handler;
 
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.LoginRequiredException;
 import com.sprint.mission.otboo.domain.authuser.auth.service.OAuth2SignInService;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
 import com.sprint.mission.otboo.security.cookie.provider.RefreshTokenCookieProvider;
+import com.sprint.mission.otboo.security.oauth2.OAuth2RedirectSupport;
 import com.sprint.mission.otboo.security.oauth2.properties.OAuth2Properties;
+import com.sprint.mission.otboo.security.token.exception.business.TokenException;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +21,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.WebUtils;
 
 @Component
@@ -49,20 +53,34 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     OAuth2Identity identity = resolveIdentity(baseProvider, oAuth2User);
 
-    // 연동 전용 진입점일 때만 쿠키를 확인한다 - 로그인 화면 쪽은 쿠키를 아예 안 본다.
-    UUID explicitLinkUserId = explicitLink ? resolveLoggedInUserId(request) : null;
+    try {
+      // 연동 전용 진입점일 때만 쿠키를 확인한다 - 로그인 화면 쪽은 쿠키를 아예 안 본다.
+      UUID explicitLinkUserId = explicitLink ? resolveLoggedInUserId(request) : null;
 
-    SignInDto result = oAuth2SignInService.signIn(
-        identity.provider(), identity.providerId(), identity.email(), identity.name(),
-        explicitLinkUserId);
+      SignInDto result = oAuth2SignInService.signIn(
+          identity.provider(), identity.providerId(), identity.email(), identity.name(),
+          explicitLinkUserId);
 
-    refreshTokenCookieProvider.attach(response, result.refreshToken());
-    response.sendRedirect(oAuth2Properties.successRedirectUri());
+      refreshTokenCookieProvider.attach(response, result.refreshToken());
+      response.sendRedirect(oAuth2Properties.successRedirectUri());
+    } catch (LoginRequiredException e) {
+      OAuth2RedirectSupport.redirectWithError(response, oAuth2Properties.failureRedirectUri(),
+          "login_required");
+    }
   }
 
   private UUID resolveLoggedInUserId(HttpServletRequest request) {
     Cookie cookie = WebUtils.getCookie(request, RefreshTokenCookieProvider.REFRESH_TOKEN);
-    return tokenProvider.parseRefreshToken(cookie.getValue()).userId();
+    String refreshToken = cookie != null ? cookie.getValue() : null;
+
+    if (!StringUtils.hasText(refreshToken)) {
+      throw LoginRequiredException.withNone();
+    }
+    try {
+      return tokenProvider.parseRefreshToken(refreshToken).userId();
+    } catch (TokenException e) {
+      throw LoginRequiredException.withNone();
+    }
   }
 
   private OAuth2Identity resolveIdentity(String provider, OAuth2User oAuth2User) {
