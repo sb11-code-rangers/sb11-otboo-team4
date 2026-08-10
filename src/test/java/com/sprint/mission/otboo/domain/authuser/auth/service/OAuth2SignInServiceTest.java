@@ -33,6 +33,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -141,6 +142,42 @@ class OAuth2SignInServiceTest {
   @Nested
   @DisplayName("익명 로그인 시도 (자동 가입/병합)")
   class AnonymousMergeOrCreate {
+
+    @Test
+    @DisplayName("이메일이 이미 가입되어 있으면 비밀번호를 무효화하고 기존 계정에 연동한다")
+    void 이메일이_이미_가입되어_있으면_비밀번호를_무효화하고_기존_계정에_연동한다() {
+      // given
+      User existingUser = userWithId(UUID.randomUUID(), "홍길동", "hong@gmail.com");
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.GOOGLE, "google-4"))
+          .willReturn(Optional.empty());
+      given(userRepository.findByEmail("hong@gmail.com")).willReturn(Optional.of(existingUser));
+      given(passwordEncoder.encode(any())).willReturn("random-encoded-password");
+
+      given(clock.instant()).willReturn(NOW);
+      UUID sessionId = UUID.randomUUID();
+      UUID jti = UUID.randomUUID();
+      UserSession issued = new UserSession(existingUser.getId(), sessionId, jti, NOW);
+      given(userSessionRegistry.issue(existingUser.getId(), NOW)).willReturn(issued);
+      given(tokenProvider.createAccessToken(existingUser.getId(), sessionId, "USER", NOW))
+          .willReturn("access-token");
+      given(tokenProvider.createRefreshToken(existingUser.getId(), sessionId, jti, NOW))
+          .willReturn("refresh-token");
+      UserDto userDto = new UserDto(existingUser.getId(), null, "hong@gmail.com", "홍길동", Role.USER,
+          false);
+      given(authMapper.signInDtoFrom(existingUser, "access-token", "refresh-token"))
+          .willReturn(new SignInDto(new JwtDto(userDto, "access-token"), "refresh-token"));
+
+      // when
+      oAuth2SignInService.signIn(OAuth2Provider.GOOGLE, "google-4", "hong@gmail.com", "홍길동");
+
+      // then
+      assertThat(existingUser.getPassword()).isEqualTo("random-encoded-password");
+      verify(userSessionRegistry).revokeAll(existingUser.getId());
+      ArgumentCaptor<SocialAccount> captor = ArgumentCaptor.forClass(SocialAccount.class);
+      verify(socialAccountRepository).save(captor.capture());
+      assertThat(captor.getValue().getUser()).isEqualTo(existingUser);
+      assertThat(captor.getValue().getProviderEmail()).isEqualTo("hong@gmail.com");
+    }
 
     @Test
     @DisplayName("이메일이 가입되어 있지 않으면 새 계정을 생성한다")
