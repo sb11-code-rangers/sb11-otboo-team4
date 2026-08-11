@@ -86,7 +86,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     try {
       return tokenProvider.parseRefreshToken(refreshToken).userId();
     } catch (TokenException e) {
-      throw LoginRequiredException.withNone();
+      throw LoginRequiredException.withCause(e);
     }
   }
 

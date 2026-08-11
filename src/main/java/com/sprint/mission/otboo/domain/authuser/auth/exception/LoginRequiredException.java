@@ -15,6 +15,10 @@ public class LoginRequiredException extends AuthException implements OAuth2Failu
     return new LoginRequiredException(Map.of(), null);
   }
 
+  public static LoginRequiredException withCause(Throwable cause) {
+    return new LoginRequiredException(Map.of(), cause);
+  }
+
   @Override
   public String errorCode() {
     return "login_required";
