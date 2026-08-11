@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sprint.mission.otboo.global.file.storage.FileStorageService;
 import com.sprint.mission.otboo.global.file.storage.impl.LocalFileStorageService;
 import com.sprint.mission.otboo.global.file.storage.impl.S3FileStorageService;
+import com.sprint.mission.otboo.global.file.validator.FileValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 class FileStorageConfigTest {
 
   private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-      .withUserConfiguration(FileStorageConfig.class)
+      .withUserConfiguration(FileStorageConfig.class, FileValidator.class)
       .withPropertyValues(
           "otboo.file.public-base-url=http://localhost:8080/uploads",
           "otboo.file.max-size-bytes=5242880",
