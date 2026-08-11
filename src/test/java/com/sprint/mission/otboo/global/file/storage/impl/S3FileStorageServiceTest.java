@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
@@ -75,6 +76,21 @@ class S3FileStorageServiceTest {
       assertThatThrownBy(() -> s3FileStorageService.store(file, "profile"))
           .isInstanceOf(FileStorageException.class);
     }
+
+    @Test
+    @DisplayName("putObject 호출 중 SdkClientException이 발생하면 FileStorageException으로 변환한다")
+    void putObject_호출_중_SdkClientException이_발생하면_FileStorageException으로_변환한다() {
+      // given
+      S3FileStorageService s3FileStorageService = buildService();
+      MultipartFile file = new MockMultipartFile("file", "profile.jpg", "image/jpeg",
+          new byte[]{1, 2, 3});
+      given(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+          .willThrow(SdkClientException.create("자격 증명을 찾을 수 없습니다"));
+
+      // when & then
+      assertThatThrownBy(() -> s3FileStorageService.store(file, "profile"))
+          .isInstanceOf(FileStorageException.class);
+    }
   }
 
   @Nested
@@ -101,6 +117,19 @@ class S3FileStorageServiceTest {
       S3FileStorageService s3FileStorageService = buildService();
       given(s3Client.deleteObject(any(DeleteObjectRequest.class)))
           .willThrow(S3Exception.builder().message("access denied").build());
+
+      // when & then
+      assertThatCode(() -> s3FileStorageService.delete("profile/uuid.jpg"))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("deleteObject 호출 중 SdkClientException이 발생해도 예외를 던지지 않는다")
+    void deleteObject_호출_중_SdkClientException이_발생해도_예외를_던지지_않는다() {
+      // given
+      S3FileStorageService s3FileStorageService = buildService();
+      given(s3Client.deleteObject(any(DeleteObjectRequest.class)))
+          .willThrow(SdkClientException.create("자격 증명을 찾을 수 없습니다"));
 
       // when & then
       assertThatCode(() -> s3FileStorageService.delete("profile/uuid.jpg"))

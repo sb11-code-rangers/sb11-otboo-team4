@@ -11,11 +11,11 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Slf4j
 public class S3FileStorageService implements FileStorageService {
@@ -54,7 +54,7 @@ public class S3FileStorageService implements FileStorageService {
       s3Client.putObject(request,
           RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
-    } catch (IOException | S3Exception e) {
+    } catch (IOException | SdkException e) {
       log.error("S3 업로드 실패: domain={}, key={}", domain, key, e);
       throw FileStorageException.withCause(e);
     }
@@ -74,7 +74,7 @@ public class S3FileStorageService implements FileStorageService {
           .bucket(fileProperties.s3().bucket())
           .key(key)
           .build());
-    } catch (S3Exception e) {
+    } catch (SdkException e) {
       log.warn("S3 파일 삭제 실패(무시하고 진행): {}", key, e);
     }
   }
