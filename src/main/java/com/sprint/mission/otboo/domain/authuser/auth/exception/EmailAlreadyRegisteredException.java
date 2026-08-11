@@ -15,6 +15,10 @@ public class EmailAlreadyRegisteredException extends AuthException implements OA
     return new EmailAlreadyRegisteredException(Map.of("email", email), null);
   }
 
+  public static EmailAlreadyRegisteredException withNone() {
+    return new EmailAlreadyRegisteredException(Map.of(), null);
+  }
+
   @Override
   public String errorCode() {
     return "email_already_registered";

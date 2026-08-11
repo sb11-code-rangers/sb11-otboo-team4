@@ -74,7 +74,7 @@ public class OAuth2SignInService {
     userRepository.findByEmail(email)
         .filter(owner -> !owner.getId().equals(linkingUserId))
         .ifPresent(owner -> {
-          throw EmailAlreadyRegisteredException.withEmail(email);
+          throw EmailAlreadyRegisteredException.withNone();
         });
 
     User linkingUser = userRepository.findById(linkingUserId)
@@ -87,7 +87,8 @@ public class OAuth2SignInService {
   private User resolveAnonymousUser(OAuth2Provider provider, String providerId, String email,
       String name) {
     return userRepository.findByEmail(email)
-        .map(existingUser -> mergeWithPasswordInvalidation(existingUser, provider, providerId, email))
+        .map(existingUser -> mergeWithPasswordInvalidation(existingUser, provider, providerId,
+            email))
         .orElseGet(() -> createSocialUser(provider, providerId, email, name));
   }
 
