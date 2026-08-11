@@ -29,7 +29,6 @@ import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenExcept
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.service.CommentService;
 import com.sprint.mission.otboo.domain.social.feed.service.FeedService;
-import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import com.sprint.mission.otboo.security.details.UserPrincipal;
@@ -58,7 +57,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import tools.jackson.databind.ObjectMapper;
 
 @WebMvcTest(FeedController.class)
-@Import({FeedControllerTest.SecurityArgumentResolverConfig.class, NoSecurityTestConfig.class})
+@Import(FeedControllerTest.SecurityArgumentResolverConfig.class)
 @DisplayName("FeedController")
 class FeedControllerTest {
 

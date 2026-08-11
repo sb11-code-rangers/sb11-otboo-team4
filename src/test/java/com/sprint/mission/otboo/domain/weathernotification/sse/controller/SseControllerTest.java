@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.mission.otboo.domain.weathernotification.sse.service.SseService;
-import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.security.details.UserPrincipal;
 import java.util.List;
 import java.util.UUID;
@@ -35,7 +34,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @WebMvcTest(SseController.class)
-@Import({SseControllerTest.SecurityArgumentResolverConfig.class, NoSecurityTestConfig.class})
+@Import(SseControllerTest.SecurityArgumentResolverConfig.class)
 class SseControllerTest {
 
   @Autowired

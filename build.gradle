@@ -81,12 +81,18 @@ dependencyManagement {
     }
 }
 
+def excludedSecurityAutoConfigurations = [
+    'org.springframework.boot.security.oauth2.client.autoconfigure.servlet.OAuth2ClientWebSecurityAutoConfiguration',
+    'org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration'
+].join(',')
+
 tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'external'
     }
     finalizedBy jacocoTestReport
     systemProperty "spring.profiles.active", "test"
+    systemProperty "spring.autoconfigure.exclude", excludedSecurityAutoConfigurations
 }
 
 tasks.register('externalTest', Test) {
@@ -98,6 +104,7 @@ tasks.register('externalTest', Test) {
         includeTags 'external'
     }
     systemProperty "spring.profiles.active", "test"
+    systemProperty "spring.autoconfigure.exclude", excludedSecurityAutoConfigurations
 }
 
 def jacocoExcludes = [

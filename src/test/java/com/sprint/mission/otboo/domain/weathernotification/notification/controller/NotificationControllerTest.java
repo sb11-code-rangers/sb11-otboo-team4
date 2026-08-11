@@ -18,7 +18,6 @@ import com.sprint.mission.otboo.domain.weathernotification.notification.exceptio
 import com.sprint.mission.otboo.domain.weathernotification.notification.exception.NotificationNotFoundException;
 import com.sprint.mission.otboo.domain.weathernotification.notification.service.NotificationService;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
-import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import com.sprint.mission.otboo.global.event.NotificationLevel;
 import com.sprint.mission.otboo.security.details.UserPrincipal;
@@ -45,7 +44,7 @@ import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @WebMvcTest(NotificationController.class)
-@Import({NotificationControllerTest.SecurityArgumentResolverConfig.class, NoSecurityTestConfig.class})
+@Import(NotificationControllerTest.SecurityArgumentResolverConfig.class)
 @DisplayName("NotificationController")
 class NotificationControllerTest {
 

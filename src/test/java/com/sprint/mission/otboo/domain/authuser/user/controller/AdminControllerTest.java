@@ -15,7 +15,6 @@ import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
 import com.sprint.mission.otboo.domain.authuser.user.service.AdminService;
-import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.global.dto.CursorPageResponse;
 import com.sprint.mission.otboo.global.dto.SortDirection;
 import java.time.Instant;
@@ -51,7 +50,7 @@ import tools.jackson.databind.ObjectMapper;
 // (AuthenticationCredentialsNotFoundException, 실제로 돌려서 확인함). 그래서 AuthControllerTest의
 // SignOut 테스트와 동일하게 SecurityContextHolder를 직접 설정하는 방식을 쓴다.
 @WebMvcTest(AdminController.class)
-@Import({AdminControllerTest.MethodSecurityConfig.class, NoSecurityTestConfig.class})
+@Import(AdminControllerTest.MethodSecurityConfig.class)
 @DisplayName("AdminController")
 class AdminControllerTest {
 

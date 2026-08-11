@@ -19,7 +19,6 @@ import com.sprint.mission.otboo.domain.authuser.auth.service.AuthService;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.Role;
 import com.sprint.mission.otboo.domain.authuser.user.exception.UserNotFoundException;
-import com.sprint.mission.otboo.global.config.NoSecurityTestConfig;
 import com.sprint.mission.otboo.security.cookie.provider.RefreshTokenCookieProvider;
 import com.sprint.mission.otboo.security.token.exception.business.InvalidRefreshTokenException;
 import jakarta.servlet.http.Cookie;
@@ -30,13 +29,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 @WebMvcTest(AuthController.class)
-@Import(NoSecurityTestConfig.class)
 @DisplayName("AuthController")
 class AuthControllerTest {
 
