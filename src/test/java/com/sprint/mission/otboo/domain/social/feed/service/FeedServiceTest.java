@@ -110,6 +110,16 @@ class FeedServiceTest {
     }
   }
 
+  private static void setSoftDeletableNull(Feed feed) {
+    try {
+      var field = Feed.class.getDeclaredField("softDeletable");
+      field.setAccessible(true);
+      field.set(feed, null);
+    } catch (ReflectiveOperationException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   @Nested
   @DisplayName("피드 등록")
   class CreateFeed {
@@ -881,6 +891,29 @@ class FeedServiceTest {
       assertThatThrownBy(() -> feedService.update(feedId, request, currentUserId))
           .isInstanceOf(FeedNotFoundException.class);
     }
+
+    @Test
+    @DisplayName("softDeletable이 null인 피드도 삭제되지 않은 것으로 처리한다")
+    void softDeletable이_null인_피드도_삭제되지_않은_것으로_처리한다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID currentUserId = UUID.randomUUID();
+      Feed feed = Feed.create(currentUserId, UUID.randomUUID(), "원래 내용",
+          DUMMY_SNAPSHOT, List.of());
+      setSoftDeletableNull(feed);
+      given(feedRepository.findById(feedId)).willReturn(Optional.of(feed));
+
+      UserSummary author = new UserSummary(currentUserId, "경신", null);
+      given(userSummaryQueryRepository.findByUserId(currentUserId)).willReturn(author);
+
+      FeedUpdateRequest request = new FeedUpdateRequest("수정된 내용");
+
+      // when
+      feedService.update(feedId, request, currentUserId);
+
+      // then
+      assertThat(feed.getContent()).isEqualTo("수정된 내용");
+    }
   }
 
   @Nested
@@ -947,6 +980,24 @@ class FeedServiceTest {
       // when & then
       assertThatThrownBy(() -> feedService.delete(feedId, currentUserId))
           .isInstanceOf(FeedForbiddenException.class);
+    }
+
+    @Test
+    @DisplayName("softDeletable이 null인 피드도 정상적으로 삭제한다")
+    void softDeletable이_null인_피드도_정상적으로_삭제한다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID currentUserId = UUID.randomUUID();
+      Feed feed = Feed.create(currentUserId, UUID.randomUUID(), "내용",
+          DUMMY_SNAPSHOT, List.of());
+      setSoftDeletableNull(feed);
+      given(feedRepository.findById(feedId)).willReturn(Optional.of(feed));
+
+      // when
+      feedService.delete(feedId, currentUserId);
+
+      // then
+      assertThat(feed.isDeleted()).isTrue();
     }
   }
 }

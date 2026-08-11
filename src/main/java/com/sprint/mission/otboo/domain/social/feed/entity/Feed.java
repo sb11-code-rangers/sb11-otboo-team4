@@ -127,10 +127,13 @@ public class Feed {
   }
 
   public boolean isDeleted() {
-    return softDeletable.isDeleted();
+    return softDeletable != null && softDeletable.isDeleted();
   }
 
   public void delete() {
+    if (softDeletable == null) {
+      softDeletable = new SoftDeletable();
+    }
     softDeletable.delete();
   }
 }
