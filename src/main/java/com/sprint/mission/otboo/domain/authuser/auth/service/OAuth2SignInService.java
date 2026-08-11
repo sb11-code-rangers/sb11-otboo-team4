@@ -112,7 +112,7 @@ public class OAuth2SignInService {
       savedUser = userRepository.saveAndFlush(newUser);
     } catch (DataIntegrityViolationException e) {
       // findByEmail 확인과 저장 사이에 다른 요청이 같은 이메일로 먼저 가입한 경우.
-      throw DuplicateEmailException.withEmail(email);
+      throw DuplicateEmailException.withEmail(email, e);
     }
 
     profileRepository.save(Profile.create(savedUser));
