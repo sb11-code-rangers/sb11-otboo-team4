@@ -68,6 +68,7 @@ class OAuth2LoginSuccessHandlerTest {
     Map<String, Object> attributes = new HashMap<>();
     attributes.put("sub", sub);
     attributes.put("email", email);
+    attributes.put("email_verified", true);
     attributes.put("name", name);
     OAuth2User oAuth2User = new DefaultOAuth2User(
         List.of(new SimpleGrantedAuthority("ROLE_USER")), attributes, "sub");
@@ -111,7 +112,8 @@ class OAuth2LoginSuccessHandlerTest {
     @DisplayName("구글 로그인이 성공하면 리프레시 토큰 쿠키를 설정하고 성공 URI로 리다이렉트한다")
     void 구글_로그인이_성공하면_리프레시_토큰_쿠키를_설정하고_성공_URI로_리다이렉트한다() throws Exception {
       // given
-      OAuth2AuthenticationToken token = googleToken("google-sub-1", "hong@gmail.com", "홍길동", "google");
+      OAuth2AuthenticationToken token = googleToken("google-sub-1", "hong@gmail.com", "홍길동",
+          "google");
       SignInDto signInDto = signInDtoOf("hong@gmail.com", "홍길동");
       given(oAuth2SignInService.signIn(
           OAuth2Provider.GOOGLE, "google-sub-1", "hong@gmail.com", "홍길동", null))
@@ -126,6 +128,20 @@ class OAuth2LoginSuccessHandlerTest {
       // then
       verify(refreshTokenCookieProvider).attach(response, signInDto.refreshToken());
       assertThat(response.getRedirectedUrl()).isEqualTo(SUCCESS_URI);
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 provider면 oauth_processing_failed로 리다이렉트한다")
+    void 지원하지_않는_provider면_oauth_processing_failed로_리다이렉트한다() throws Exception {
+      // given
+      OAuth2AuthenticationToken token = googleToken("sub-1", "hong@gmail.com", "홍길동", "naver");
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      successHandler.onAuthenticationSuccess(new MockHttpServletRequest(), response, token);
+
+      // then
+      assertThat(response.getRedirectedUrl()).contains("error_message=oauth_processing_failed");
     }
   }
 
@@ -188,6 +204,25 @@ class OAuth2LoginSuccessHandlerTest {
       verify(oAuth2SignInService).signIn(
           OAuth2Provider.KAKAO, "111", "kakao-user_111@kakao.com", "kakao-user", null);
     }
+
+    @Test
+    @DisplayName("카카오 이메일이 인증됐지만 이메일 값 자체가 없으면 가상 이메일을 사용한다")
+    void 카카오_이메일이_인증됐지만_이메일_값_자체가_없으면_가상_이메일을_사용한다() throws Exception {
+      // given
+      Map<String, Object> kakaoAccount = kakaoAccount(true, null, "길동이");
+      OAuth2AuthenticationToken token = kakaoToken(555L, kakaoAccount, "kakao");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.KAKAO, "555", "길동이_555@kakao.com", "길동이", null))
+          .willReturn(signInDtoOf("길동이_555@kakao.com", "길동이"));
+
+      // when
+      successHandler.onAuthenticationSuccess(
+          new MockHttpServletRequest(), new MockHttpServletResponse(), token);
+
+      // then
+      verify(oAuth2SignInService).signIn(
+          OAuth2Provider.KAKAO, "555", "길동이_555@kakao.com", "길동이", null);
+    }
   }
 
   @Nested
@@ -209,7 +244,8 @@ class OAuth2LoginSuccessHandlerTest {
           .willReturn(signInDtoOf("hong@gmail.com", "홍길동"));
 
       MockHttpServletRequest request = new MockHttpServletRequest();
-      request.setCookies(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "valid-refresh-token"));
+      request.setCookies(
+          new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "valid-refresh-token"));
 
       // when
       successHandler.onAuthenticationSuccess(request, new MockHttpServletResponse(), token);

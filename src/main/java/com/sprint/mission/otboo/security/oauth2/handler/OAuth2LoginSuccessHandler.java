@@ -54,9 +54,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         ? registrationId.substring(0, registrationId.length() - LINK_SUFFIX.length())
         : registrationId;
 
-    OAuth2Identity identity = resolveIdentity(baseProvider, oAuth2User);
-
     try {
+      OAuth2Identity identity = resolveIdentity(baseProvider, oAuth2User);
       // 연동 전용 진입점일 때만 쿠키를 확인한다 - 로그인 화면 쪽은 쿠키를 아예 안 본다.
       UUID explicitLinkUserId = explicitLink ? resolveLoggedInUserId(request) : null;
 
@@ -92,15 +91,21 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
   private OAuth2Identity resolveIdentity(String provider, OAuth2User oAuth2User) {
     return switch (provider) {
-      case "google" -> new OAuth2Identity(
-          OAuth2Provider.GOOGLE,
-          oAuth2User.getAttribute("sub"),
-          oAuth2User.getAttribute("email"),
-          oAuth2User.getAttribute("name")
-      );
+      case "google" -> resolveGoogleIdentity(oAuth2User);
       case "kakao" -> resolveKakaoIdentity(oAuth2User);
       default -> throw new IllegalStateException("지원하지 않는 provider: " + provider);
     };
+  }
+
+  private OAuth2Identity resolveGoogleIdentity(OAuth2User oAuth2User) {
+    String providerId = oAuth2User.getAttribute("sub");
+    String name = oAuth2User.getAttribute("name");
+    Boolean emailVerified = oAuth2User.getAttribute("email_verified");
+    String rawEmail = oAuth2User.getAttribute("email");
+    String email = Boolean.TRUE.equals(emailVerified) && rawEmail != null
+        ? rawEmail
+        : name + "_" + providerId + "@google.com";
+    return new OAuth2Identity(OAuth2Provider.GOOGLE, providerId, email, name);
   }
 
   // 카카오 id는 Long으로 내려오는데, String.valueOf(genericMethod())로 바로 넘기면
