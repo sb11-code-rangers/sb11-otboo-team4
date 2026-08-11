@@ -2,6 +2,7 @@ package com.sprint.mission.otboo.global.file.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Locale;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -71,6 +72,24 @@ class FileExtensionUtilsTest {
 
       // then
       assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("터키어 로케일에서도 확장자를 올바르게 소문자로 변환한다")
+    void 터키어_로케일에서도_확장자를_올바르게_소문자로_변환한다() {
+      // given
+      Locale defaultLocale = Locale.getDefault();
+      Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+
+      try {
+        // when
+        Optional<String> result = FileExtensionUtils.extract("profile.GIF");
+
+        // then
+        assertThat(result).contains("gif");
+      } finally {
+        Locale.setDefault(defaultLocale);
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.sprint.mission.otboo.global.file.util;
 
+import java.util.Locale;
 import java.util.Optional;
 import org.springframework.util.StringUtils;
 
@@ -18,6 +19,6 @@ public final class FileExtensionUtils {
       return Optional.empty();
     }
 
-    return Optional.of(filename.substring(dotIndex + 1).toLowerCase());
+    return Optional.of(filename.substring(dotIndex + 1).toLowerCase(Locale.ROOT));
   }
 }
