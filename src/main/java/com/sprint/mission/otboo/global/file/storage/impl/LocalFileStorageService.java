@@ -44,7 +44,7 @@ public class LocalFileStorageService implements FileStorageService {
       file.transferTo(target);
     } catch (IOException e) {
       log.error("파일 저장 실패: domain={}, key={}", domain, key, e);
-      throw FileStorageException.withCause(domain, key, e);
+      throw FileStorageException.withCause(e);
     }
 
     return key;

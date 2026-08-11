@@ -11,7 +11,7 @@ public class FileStorageException extends FileException {
     super(HttpStatus.INTERNAL_SERVER_ERROR, MESSAGE, details, cause);
   }
 
-  public static FileStorageException withCause(String domain, String key, Throwable cause) {
-    return new FileStorageException(Map.of("domain", domain, "key", key), cause);
+  public static FileStorageException withCause(Throwable cause) {
+    return new FileStorageException(Map.of(), cause);
   }
 }

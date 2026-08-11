@@ -56,7 +56,7 @@ public class S3FileStorageService implements FileStorageService {
 
     } catch (IOException | S3Exception e) {
       log.error("S3 업로드 실패: domain={}, key={}", domain, key, e);
-      throw FileStorageException.withCause(domain, key, e);
+      throw FileStorageException.withCause(e);
     }
 
     return key;
