@@ -2,8 +2,6 @@ package com.sprint.mission.otboo.global.file.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprint.mission.otboo.global.file.properties.FileProperties;
-import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,9 +12,11 @@ class FileWebConfigTest {
 
   private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
       .withUserConfiguration(FileWebConfig.class)
-      .withBean(FileProperties.class, () -> new FileProperties(
-          "local", "http://localhost:8080/uploads", 5242880, Set.of("jpg"),
-          new FileProperties.Local("./uploads"), null));
+      .withPropertyValues(
+          "otboo.file.public-base-url=http://localhost:8080/uploads",
+          "otboo.file.max-size-bytes=5242880",
+          "otboo.file.allowed-extensions=jpg,png",
+          "otboo.file.local.upload-dir=./uploads");
 
   @Nested
   @DisplayName("impl 값에 따른 빈 등록")
