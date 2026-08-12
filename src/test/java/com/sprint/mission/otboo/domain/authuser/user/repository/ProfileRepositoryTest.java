@@ -2,10 +2,12 @@ package com.sprint.mission.otboo.domain.authuser.user.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sprint.mission.otboo.domain.authuser.user.entity.Location;
 import com.sprint.mission.otboo.domain.authuser.user.entity.Profile;
 import com.sprint.mission.otboo.domain.authuser.user.entity.User;
 import com.sprint.mission.otboo.global.config.JpaConfig;
 import com.sprint.mission.otboo.global.config.QuerydslConfig;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -109,6 +111,42 @@ class ProfileRepositoryTest {
 
       // then
       assertThat(found).isEmpty();
+    }
+  }
+
+  @Nested
+  @DisplayName("격자 좌표로 조회 (findByLocation)")
+  class FindByLocation {
+
+    @Test
+    @DisplayName("location 좌표가 일치하는 프로필만 반환하고 위치 미등록 프로필은 제외한다")
+    void location_좌표가_일치하는_프로필만_반환하고_위치_미등록_프로필은_제외한다() {
+      // given
+      User matchingUser = userRepository.save(
+          User.create("홍길동", "hong4@test.com", "encoded-password"));
+      Profile matchingProfile = Profile.create(matchingUser);
+      matchingProfile.changeProfile(null, null,
+          Location.create(37.5, 127.0, 60, 127, List.of("서울특별시", "강남구")), 3);
+      profileRepository.save(matchingProfile);
+
+      User otherGridUser = userRepository.save(
+          User.create("김철수", "kim@test.com", "encoded-password"));
+      Profile otherGridProfile = Profile.create(otherGridUser);
+      otherGridProfile.changeProfile(null, null,
+          Location.create(35.1, 129.0, 98, 76, List.of("부산광역시")), 3);
+      profileRepository.save(otherGridProfile);
+
+      User noLocationUser = userRepository.save(
+          User.create("박영희", "park@test.com", "encoded-password"));
+      profileRepository.save(Profile.create(noLocationUser));
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      // when
+      List<Profile> found = profileRepository.findByLocation(60, 127);
+
+      // then
+      assertThat(found).extracting(Profile::getId).containsExactly(matchingProfile.getId());
     }
   }
 }
