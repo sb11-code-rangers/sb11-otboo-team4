@@ -1,22 +1,39 @@
 package com.sprint.mission.otboo.global.temppassword.registry.impl;
 
+import com.sprint.mission.otboo.global.temppassword.generator.TempPasswordGenerator;
 import com.sprint.mission.otboo.global.temppassword.properties.TempPasswordProperties;
 import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class TempPasswordRedisRegistry implements TempPasswordRegistry {
 
   private static final String KEY_PREFIX = "auth:temp-password:";
 
   private final StringRedisTemplate redisTemplate;
   private final TempPasswordProperties tempPasswordProperties;
+  private final TempPasswordGenerator tempPasswordGenerator;
   private final PasswordEncoder passwordEncoder;
+
+  public TempPasswordRedisRegistry(
+      StringRedisTemplate redisTemplate,
+      TempPasswordProperties tempPasswordProperties,
+      TempPasswordGenerator tempPasswordProvider,
+      PasswordEncoder passwordEncoder
+  ) {
+    this.redisTemplate = redisTemplate;
+    this.tempPasswordProperties = tempPasswordProperties;
+    this.tempPasswordGenerator = tempPasswordProvider;
+    this.passwordEncoder = passwordEncoder;
+  }
+
+  @Override
+  public TempPasswordGenerator generator() {
+    return tempPasswordGenerator;
+  }
 
   @Override
   public void save(UUID userId, String rawTempPassword) {
