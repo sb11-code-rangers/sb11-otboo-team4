@@ -13,13 +13,15 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
 public class GoogleSmtpMailService implements MailService {
 
   private final JavaMailSender mailSender;
   private final TemplateEngine templateEngine;
+
+  public GoogleSmtpMailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
+    this.mailSender = mailSender;
+    this.templateEngine = templateEngine;
+  }
 
   @Override
   public void sendTempPassword(String toEmail, String rawTempPassword, int expireMinutes) {
