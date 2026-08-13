@@ -13,7 +13,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 class TempPasswordGeneratorConfigTest {
 
   private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-      .withUserConfiguration(TempPasswordGeneratorConfig.class);
+      .withUserConfiguration(TempPasswordGeneratorConfig.class)
+      .withPropertyValues("otboo.temp-password.expiration=3m");
 
   @Test
   @DisplayName("generator 값이 없으면 RandomTempPasswordGenerator가 등록된다")
@@ -33,5 +34,13 @@ class TempPasswordGeneratorConfigTest {
     contextRunner.withPropertyValues("otboo.temp-password.generator=fixed")
         .run(context -> assertThat(context.getBean(TempPasswordGenerator.class))
             .isInstanceOf(FixedTempPasswordGenerator.class));
+  }
+
+  @Test
+  @DisplayName("지원하지 않는 generator 값이면 컨텍스트 기동에 실패한다")
+  void 지원하지_않는_generator_값이면_컨텍스트_기동에_실패한다() {
+    // when & then
+    contextRunner.withPropertyValues("otboo.temp-password.generator=unknown")
+        .run(context -> assertThat(context).hasFailed());
   }
 }
