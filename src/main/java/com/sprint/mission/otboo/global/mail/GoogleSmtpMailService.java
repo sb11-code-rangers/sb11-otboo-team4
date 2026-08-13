@@ -21,11 +21,11 @@ public class GoogleSmtpMailService implements MailService {
   private final TemplateEngine templateEngine;
 
   @Override
-  public void sendTempPassword(String toEmail, String rawTempPassword) {
+  public void sendTempPassword(String toEmail, String rawTempPassword, int expireMinutes) {
     try {
       Context context = new Context();
       context.setVariable("temporaryPassword", rawTempPassword);
-      context.setVariable("expireMinutes", 3);
+      context.setVariable("expireMinutes", expireMinutes);
       String html = templateEngine.process("mail/temporary-password", context);
 
       MimeMessage message = mailSender.createMimeMessage();

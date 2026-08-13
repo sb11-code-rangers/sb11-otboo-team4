@@ -16,6 +16,6 @@ public class TempPasswordEventListener {
   @Async("mailExecutor")
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handler(TempPasswordRequestedEvent event) {
-    mailService.sendTempPassword(event.email(), event.rawTempPassword());
+    mailService.sendTempPassword(event.email(), event.rawTempPassword(), event.expireMinutes());
   }
 }

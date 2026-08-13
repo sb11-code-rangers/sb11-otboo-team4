@@ -18,4 +18,6 @@ public interface TempPasswordRegistry {
   void revoke(UUID userId);
 
   boolean matches(UUID userId, String rawPassword);
+
+  int getExpirationMinutes();
 }

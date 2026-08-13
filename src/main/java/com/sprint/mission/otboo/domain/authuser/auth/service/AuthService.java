@@ -115,7 +115,8 @@ public class AuthService {
         .ifPresent(user -> {
           String rawTempPassword = tempPasswordRegistry.issue(user.getId());
           eventPublisher.publishEvent(
-              new TempPasswordRequestedEvent(user.getEmail(), rawTempPassword));
+              new TempPasswordRequestedEvent(user.getEmail(), rawTempPassword,
+                  tempPasswordRegistry.getExpirationMinutes()));
         });
   }
 

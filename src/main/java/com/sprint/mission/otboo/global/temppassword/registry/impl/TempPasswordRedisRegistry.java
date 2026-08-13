@@ -52,6 +52,11 @@ public class TempPasswordRedisRegistry implements TempPasswordRegistry {
     return saved != null && passwordEncoder.matches(rawPassword, saved);
   }
 
+  @Override
+  public int getExpirationMinutes() {
+    return (int) tempPasswordProperties.expiration().toMinutes();
+  }
+
   private String key(UUID userId) {
     return KEY_PREFIX + userId;
   }
