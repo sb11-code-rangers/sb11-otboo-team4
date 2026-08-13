@@ -1,7 +1,6 @@
 package com.sprint.mission.otboo.global.temppassword.config;
 
 import com.sprint.mission.otboo.global.temppassword.generator.TempPasswordGenerator;
-import com.sprint.mission.otboo.global.temppassword.generator.impl.FixedTempPasswordGenerator;
 import com.sprint.mission.otboo.global.temppassword.generator.impl.RandomTempPasswordGenerator;
 import com.sprint.mission.otboo.global.temppassword.properties.TempPasswordProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -17,7 +16,6 @@ public class TempPasswordGeneratorConfig {
       TempPasswordProperties tempPasswordProperties) {
     return switch (tempPasswordProperties.generator()) {
       case RANDOM -> new RandomTempPasswordGenerator();
-      case FIXED -> new FixedTempPasswordGenerator();
     };
   }
 }
