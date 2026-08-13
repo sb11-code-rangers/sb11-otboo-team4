@@ -2,6 +2,7 @@ package com.sprint.mission.otboo.global.temppassword.registry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sprint.mission.otboo.global.temppassword.properties.TempPasswordProperties;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +50,8 @@ class TempPasswordRedisRegistryTest {
   @BeforeEach
   void setUp() {
     redisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
-    registry = new TempPasswordRedisRegistry(redisTemplate, new BCryptPasswordEncoder());
+    registry = new TempPasswordRedisRegistry(redisTemplate,
+        new TempPasswordProperties(Duration.ofMinutes(3)), new BCryptPasswordEncoder());
   }
 
   @Nested

@@ -1,6 +1,6 @@
 package com.sprint.mission.otboo.global.temppassword.registry;
 
-import java.time.Duration;
+import com.sprint.mission.otboo.global.temppassword.properties.TempPasswordProperties;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -12,14 +12,15 @@ import org.springframework.stereotype.Component;
 public class TempPasswordRedisRegistry implements TempPasswordRegistry {
 
   private static final String KEY_PREFIX = "auth:temp-password:";
-  private static final Duration TTL = Duration.ofMinutes(3);
 
   private final StringRedisTemplate redisTemplate;
+  private final TempPasswordProperties tempPasswordProperties;
   private final PasswordEncoder passwordEncoder;
 
   @Override
   public void save(UUID userId, String rawTempPassword) {
-    redisTemplate.opsForValue().set(key(userId), passwordEncoder.encode(rawTempPassword), TTL);
+    redisTemplate.opsForValue().set(key(userId), passwordEncoder.encode(rawTempPassword),
+        tempPasswordProperties.expiration());
   }
 
   @Override
