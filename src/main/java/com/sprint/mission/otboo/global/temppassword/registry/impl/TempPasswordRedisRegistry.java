@@ -6,9 +6,7 @@ import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistr
 import java.util.UUID;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TempPasswordRedisRegistry implements TempPasswordRegistry {
 
   private static final String KEY_PREFIX = "auth:temp-password:";
