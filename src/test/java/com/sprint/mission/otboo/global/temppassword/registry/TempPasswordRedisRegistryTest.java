@@ -2,6 +2,7 @@ package com.sprint.mission.otboo.global.temppassword.registry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sprint.mission.otboo.global.temppassword.generator.impl.RandomTempPasswordGenerator;
 import com.sprint.mission.otboo.global.temppassword.properties.TempPasswordProperties;
 import com.sprint.mission.otboo.global.temppassword.registry.impl.TempPasswordRedisRegistry;
 import java.time.Duration;
@@ -52,7 +53,8 @@ class TempPasswordRedisRegistryTest {
   void setUp() {
     redisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
     registry = new TempPasswordRedisRegistry(redisTemplate,
-        new TempPasswordProperties(Duration.ofMinutes(3)), new BCryptPasswordEncoder());
+        new TempPasswordProperties(Duration.ofMinutes(3)),
+        new RandomTempPasswordGenerator(), new BCryptPasswordEncoder());
   }
 
   @Nested
@@ -118,6 +120,25 @@ class TempPasswordRedisRegistryTest {
       assertThat(ttl).isNotNull();
       assertThat(ttl).isPositive();
       assertThat(ttl).isLessThanOrEqualTo(Duration.ofMinutes(3).toSeconds());
+    }
+  }
+
+  @Nested
+  @DisplayName("발급 - issue")
+  class Issue {
+
+    @Test
+    @DisplayName("생성한 값을 저장하고 그대로 반환한다")
+    void 생성한_값을_저장하고_그대로_반환한다() {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      // when
+      String issued = registry.issue(userId);
+
+      // then
+      assertThat(issued).hasSize(12);
+      assertThat(registry.matches(userId, issued)).isTrue();
     }
   }
 
