@@ -28,6 +28,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.OotdSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.dto.WeatherSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.entity.Feed;
 import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
+import com.sprint.mission.otboo.domain.social.feed.exception.AuthorNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.exception.WeatherNotFoundException;
@@ -139,9 +140,7 @@ class FeedServiceTest {
           .satisfies(ex -> {
             FeedForbiddenException fe = (FeedForbiddenException) ex;
             assertThat(fe.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
-            assertThat(fe.getDetails())
-                .containsEntry("currentUserId", currentUserId)
-                .containsKey("requestedAuthorId");
+            assertThat(fe.getDetails()).isEmpty();
           });
     }
 
@@ -312,7 +311,7 @@ class FeedServiceTest {
       UserSummary author = new UserSummary(currentUserId, "테스터", null);
 
       when(weatherSnapshotProvider.readSnapshot(any())).thenReturn(DUMMY_SNAPSHOT);
-      when(ootdSnapshotProvider.readOotds(request.clothesIds(), request.authorId()))
+      when(ootdSnapshotProvider.readOotds(request.clothesIds(), currentUserId))
           .thenReturn(ootds);
       when(userSummaryQueryRepository.findByUserId(currentUserId)).thenReturn(author);
       when(feedRepository.save(any(Feed.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -326,7 +325,7 @@ class FeedServiceTest {
       // then
       ArgumentCaptor<Feed> captor = ArgumentCaptor.forClass(Feed.class);
       verify(feedRepository).save(captor.capture());
-      verify(ootdSnapshotProvider).readOotds(request.clothesIds(), request.authorId());
+      verify(ootdSnapshotProvider).readOotds(request.clothesIds(), currentUserId);
       Feed saved = captor.getValue();
       assertThat(saved.getOotds()).hasSize(2);
       assertThat(saved.getOotds().get(0).name()).isEqualTo("패딩");
@@ -353,7 +352,7 @@ class FeedServiceTest {
           UUID.randomUUID(), null, null, author, null, List.of(ootdDto), "내용", 0L, 0, false);
 
       when(weatherSnapshotProvider.readSnapshot(any())).thenReturn(DUMMY_SNAPSHOT);
-      when(ootdSnapshotProvider.readOotds(request.clothesIds(), request.authorId()))
+      when(ootdSnapshotProvider.readOotds(request.clothesIds(), currentUserId))
           .thenReturn(List.of(ootdSnapshot));
       when(userSummaryQueryRepository.findByUserId(currentUserId)).thenReturn(author);
       when(feedRepository.save(any(Feed.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -595,6 +594,31 @@ class FeedServiceTest {
       // then
       assertThat(result.data()).containsExactly(likedDto, notLikedDto);
     }
+
+    @Test
+    @DisplayName("작성자를 조회할 수 없으면 AuthorNotFoundException을 던진다")
+    void 작성자를_조회할_수_없으면_AuthorNotFoundException을_던진다() {
+      // given
+      UUID currentUserId = UUID.randomUUID();
+      UUID authorId = UUID.randomUUID();
+      Feed feed = Feed.create(authorId, UUID.randomUUID(), "내용", DUMMY_SNAPSHOT, List.of());
+      setFeedId(feed, UUID.randomUUID());
+
+      CursorPageResponse<Feed> repoPage = new CursorPageResponse<>(
+          List.of(feed), null, null, false, 1L, "createdAt", SortDirection.DESCENDING);
+      FeedListParams params = new FeedListParams(
+          null, null, 2, FeedSortBy.CREATED_AT, SortDirection.DESCENDING, null, null);
+
+      given(feedRepository.findFeeds(params)).willReturn(repoPage);
+
+      // author 조회 결과 null
+      given(userSummaryQueryRepository.findByUserIds(List.of(authorId)))
+          .willReturn(List.of());
+
+      // when & then
+      assertThatThrownBy(() -> feedService.getFeeds(params, currentUserId))
+          .isInstanceOf(AuthorNotFoundException.class);
+    }
   }
 
   @Nested
@@ -612,12 +636,16 @@ class FeedServiceTest {
       given(feedRepository.findAuthorId(feedId)).willReturn(Optional.of(UUID.randomUUID()));
       given(userSummaryQueryRepository.findByUserId(userId))
           .willReturn(new UserSummary(userId, "좋아요누른사람", "img.png"));
+      given(feedLikeRepository.saveAndFlush(any(FeedLike.class))).willAnswer(
+          inv -> inv.getArgument(0));
+      given(feedRepository.incrementLikeCount(feedId)).willReturn(1);
+
       // when
       feedService.like(feedId, userId);
 
       // then
       ArgumentCaptor<FeedLike> captor = ArgumentCaptor.forClass(FeedLike.class);
-      verify(feedLikeRepository).save(captor.capture());
+      verify(feedLikeRepository).saveAndFlush(captor.capture());
       assertThat(captor.getValue().getFeedId()).isEqualTo(feedId);
       assertThat(captor.getValue().getUserId()).isEqualTo(userId);
       verify(feedRepository).incrementLikeCount(feedId);
@@ -636,7 +664,7 @@ class FeedServiceTest {
       feedService.like(feedId, userId);
 
       // then
-      verify(feedLikeRepository, never()).save(any());
+      verify(feedLikeRepository, never()).saveAndFlush(any());
       verify(feedRepository, never()).incrementLikeCount(any());
     }
 
@@ -651,7 +679,7 @@ class FeedServiceTest {
 
       ConstraintViolationException cause =
           new ConstraintViolationException("UQ 위반", null, "UQ_feed_likes_feed_id_user_id");
-      given(feedLikeRepository.save(any()))
+      given(feedLikeRepository.saveAndFlush(any()))
           .willThrow(new DataIntegrityViolationException("UQ 위반", cause));
 
       // when & then
@@ -671,7 +699,7 @@ class FeedServiceTest {
       // 원인 제약명이 UQ_feed_likes_feed_id_user_id 가 아닌 다른 제약
       ConstraintViolationException cause =
           new ConstraintViolationException("FK 위반", null, "FK_feeds_TO_feed_likes_1");
-      given(feedLikeRepository.save(any()))
+      given(feedLikeRepository.saveAndFlush(any()))
           .willThrow(new DataIntegrityViolationException("FK 위반", cause));
 
       // when & then
@@ -705,6 +733,9 @@ class FeedServiceTest {
       given(feedRepository.findAuthorId(feedId)).willReturn(Optional.of(authorId));
       given(userSummaryQueryRepository.findByUserId(userId))
           .willReturn(new UserSummary(userId, "좋아요누른사람", "img.png"));
+      given(feedLikeRepository.saveAndFlush(any(FeedLike.class))).willAnswer(
+          inv -> inv.getArgument(0));
+      given(feedRepository.incrementLikeCount(feedId)).willReturn(1);
 
       // when
       feedService.like(feedId, userId);
@@ -716,6 +747,24 @@ class FeedServiceTest {
       NotificationRequestedEvent event = captor.getValue();
       assertThat(event.receiverIds()).containsExactly(authorId);
       assertThat(event.content()).contains("좋아요누른사람");
+    }
+
+    @Test
+    @DisplayName("카운트 증가가 반영되지 않으면 FeedNotFoundException을 던진다")
+    void 카운트_증가가_반영되지_않으면_FeedNotFoundException을_던진다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
+      given(feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)).willReturn(false);
+      given(feedLikeRepository.saveAndFlush(any(FeedLike.class)))
+          .willAnswer(inv -> inv.getArgument(0));
+      given(feedRepository.incrementLikeCount(feedId)).willReturn(0);
+
+      // when & then
+      assertThatThrownBy(() -> feedService.like(feedId, userId))
+          .isInstanceOf(FeedNotFoundException.class);
+      verify(eventPublisher, never()).publishEvent(any());
     }
   }
 
@@ -731,6 +780,7 @@ class FeedServiceTest {
       UUID userId = UUID.randomUUID();
       given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
       given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(1L);
+      given(feedRepository.decrementLikeCount(feedId)).willReturn(1);
 
       // when
       feedService.unlike(feedId, userId);
@@ -767,6 +817,20 @@ class FeedServiceTest {
       // when & then
       assertThatThrownBy(() -> feedService.unlike(feedId, userId))
           .isInstanceOf(FeedNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("카운트 감소가 반영되지 않아도 예외를 던지지 않는다")
+    void 카운트_감소가_반영되지_않아도_예외를_던지지_않는다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
+      given(feedLikeRepository.deleteByFeedIdAndUserId(feedId, userId)).willReturn(1L);
+      given(feedRepository.decrementLikeCount(feedId)).willReturn(0);
+
+      // when & then
+      assertThatCode(() -> feedService.unlike(feedId, userId)).doesNotThrowAnyException();
     }
   }
 

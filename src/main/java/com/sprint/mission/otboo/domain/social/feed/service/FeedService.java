@@ -10,6 +10,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.OotdSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.dto.WeatherSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.entity.Feed;
 import com.sprint.mission.otboo.domain.social.feed.entity.FeedLike;
+import com.sprint.mission.otboo.domain.social.feed.exception.AuthorNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.mapper.FeedMapper;
@@ -55,7 +56,7 @@ public class FeedService {
   public FeedDto create(FeedCreateRequest request, UUID currentUserId) {
     validateAuthorMatchesCurrentUser(request.authorId(), currentUserId);
 
-    Feed feed = feedRepository.save(createFeedWithSnapshots(request));
+    Feed feed = feedRepository.save(createFeedWithSnapshots(request, currentUserId));
     log.info("피드 등록 완료: feedId={}", feed.getId());
 
     UserSummary author = userSummaryQueryRepository.findByUserId(feed.getAuthorId());
@@ -63,6 +64,7 @@ public class FeedService {
 
     return feedMapper.toDto(feed, author, false);
   }
+
 
   public CursorPageResponse<FeedDto> getFeeds(FeedListParams params, UUID currentUserId) {
     return toDtoPage(feedRepository.findFeeds(params), currentUserId);
@@ -77,7 +79,7 @@ public class FeedService {
     if (!saveFeedLike(feedId, currentUserId)) {
       return;
     }
-    feedRepository.incrementLikeCount(feedId);
+    increaseLikeCount(feedId);
     log.info("피드 좋아요 완료: feedId={}", feedId);
 
     publishFeedLikedNotification(feedId, currentUserId);
@@ -87,7 +89,7 @@ public class FeedService {
   public void unlike(UUID feedId, UUID currentUserId) {
     validateFeedExists(feedId);
     if (feedLikeRepository.deleteByFeedIdAndUserId(feedId, currentUserId) > 0) {
-      feedRepository.decrementLikeCount(feedId);
+      decreaseLikeCount(feedId);
       log.info("피드 좋아요 취소 완료: feedId={}", feedId);
     }
   }
@@ -122,15 +124,15 @@ public class FeedService {
 
   private void validateAuthor(Feed feed, UUID currentUserId) {
     if (!feed.getAuthorId().equals(currentUserId)) {
-      throw FeedForbiddenException.authorMismatch(currentUserId, feed.getAuthorId());
+      throw FeedForbiddenException.authorMismatch();
     }
   }
 
-  private Feed createFeedWithSnapshots(FeedCreateRequest request) {
+  private Feed createFeedWithSnapshots(FeedCreateRequest request, UUID currentUserId) {
     WeatherSnapshot weatherSnapshot = weatherSnapshotProvider.readSnapshot(request.weatherId());
     List<OotdSnapshot> ootdSnapshots =
-        ootdSnapshotProvider.readOotds(request.clothesIds(), request.authorId());
-    return Feed.create(request.authorId(), request.weatherId(), request.content(),
+        ootdSnapshotProvider.readOotds(request.clothesIds(), currentUserId);
+    return Feed.create(currentUserId, request.weatherId(), request.content(),
         weatherSnapshot, ootdSnapshots);
   }
 
@@ -147,9 +149,14 @@ public class FeedService {
     Set<UUID> likedFeedIds = findLikedFeedIds(feeds, currentUserId);
 
     List<FeedDto> data = feeds.stream()
-        .map(feed -> feedMapper.toDto(feed,
-            authorMap.get(feed.getAuthorId()),
-            likedFeedIds.contains(feed.getId())))
+        .map(feed -> {
+          UserSummary author = authorMap.get(feed.getAuthorId());
+          if (author == null) {
+            log.warn("피드 작성자 정보를 조회할 수 없습니다: feedId={}", feed.getId());
+            throw AuthorNotFoundException.withNone();
+          }
+          return feedMapper.toDto(feed, author, likedFeedIds.contains(feed.getId()));
+        })
         .toList();
 
     return new CursorPageResponse<>(data, page.nextCursor(), page.nextIdAfter(),
@@ -167,7 +174,8 @@ public class FeedService {
   // 저장 성공 시 true, 동시성 충돌로 이미 존재하면 false
   private boolean saveFeedLike(UUID feedId, UUID currentUserId) {
     try {
-      feedLikeRepository.save(FeedLike.create(feedId, currentUserId));
+      FeedLike saved = feedLikeRepository.saveAndFlush(FeedLike.create(feedId, currentUserId));
+      log.info("피드 좋아요 저장 완료: feedLikeId={}", saved.getId());
       return true;
     } catch (DataIntegrityViolationException e) {
       if (isUniqueViolation(e)) {
@@ -184,9 +192,21 @@ public class FeedService {
     }
   }
 
+  private void increaseLikeCount(UUID feedId) {
+    if (feedRepository.incrementLikeCount(feedId) != 1) {
+      throw FeedNotFoundException.withId(feedId);
+    }
+  }
+
+  private void decreaseLikeCount(UUID feedId) {
+    if (feedRepository.decrementLikeCount(feedId) != 1) {
+      log.warn("좋아요 취소 후 카운터 감소 실패: feedId={}", feedId);
+    }
+  }
+
   private void validateAuthorMatchesCurrentUser(UUID authorId, UUID currentUserId) {
     if (!authorId.equals(currentUserId)) {
-      throw FeedForbiddenException.authorMismatch(currentUserId, authorId);
+      throw FeedForbiddenException.authorMismatch();
     }
   }
 

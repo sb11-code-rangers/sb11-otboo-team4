@@ -16,6 +16,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.CommentCreateRequest;
 import com.sprint.mission.otboo.domain.social.feed.dto.CommentDto;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedCommentParams;
 import com.sprint.mission.otboo.domain.social.feed.entity.Comment;
+import com.sprint.mission.otboo.domain.social.feed.exception.AuthorNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.mapper.CommentMapper;
@@ -311,6 +312,28 @@ class CommentServiceTest {
       // when & then
       assertThatThrownBy(() -> commentService.getComments(feedId, params))
           .isInstanceOf(FeedNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("작성자를 조회할 수 없으면 AuthorNotFoundException을 던진다")
+    void 작성자를_조회할_수_없으면_AuthorNotFoundException을_던진다() {
+      // given
+      UUID feedId = UUID.randomUUID();
+      UUID authorId = UUID.randomUUID();
+      Comment comment = Comment.create(feedId, authorId, "댓글 내용");
+      FeedCommentParams params = new FeedCommentParams(null, null, 10);
+
+      CursorPageResponse<Comment> repoPage = new CursorPageResponse<>(
+          List.of(comment), null, null, false, 1L, "createdAt", SortDirection.DESCENDING);
+      given(feedRepository.existsByIdAndSoftDeletable_DeletedAtIsNull(feedId)).willReturn(true);
+      given(commentRepository.findComments(feedId, params)).willReturn(repoPage);
+
+      // 작성자 조회 결과 null
+      given(userSummaryQueryRepository.findByUserIds(List.of(authorId))).willReturn(List.of());
+
+      // when & then
+      assertThatThrownBy(() -> commentService.getComments(feedId, params))
+          .isInstanceOf(AuthorNotFoundException.class);
     }
   }
 }

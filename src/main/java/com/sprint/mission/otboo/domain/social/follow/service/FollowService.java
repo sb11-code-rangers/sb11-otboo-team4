@@ -9,8 +9,10 @@ import com.sprint.mission.otboo.domain.social.follow.dto.FollowSummaryDto;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowerListParams;
 import com.sprint.mission.otboo.domain.social.follow.dto.FollowingListParams;
 import com.sprint.mission.otboo.domain.social.follow.entity.Follow;
+import com.sprint.mission.otboo.domain.social.follow.exception.FollowConflictException;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowForbiddenException;
 import com.sprint.mission.otboo.domain.social.follow.exception.FollowNotFoundException;
+import com.sprint.mission.otboo.domain.social.follow.exception.FollowUserNotFoundException;
 import com.sprint.mission.otboo.domain.social.follow.exception.SelfFollowNotAllowedException;
 import com.sprint.mission.otboo.domain.social.follow.mapper.FollowMapper;
 import com.sprint.mission.otboo.domain.social.follow.repository.FollowRepository;
@@ -65,14 +67,15 @@ public class FollowService {
       return findExistingFollow(followerId, followeeId);
     }
     try {
-      Follow saved = followRepository.save(Follow.create(followerId, followeeId));
+      Follow saved = followRepository.saveAndFlush(Follow.create(followerId, followeeId));
       log.info("팔로우 생성 완료: followId={}", saved.getId());
       publishFollowNotification(followeeId, followerName);
       return saved;
     } catch (DataIntegrityViolationException e) {
       if (isUniqueViolation(e)) {
-        log.warn("팔로우 생성 중 동시성 충돌 발생 (재조회 진행)");
-        return findExistingFollow(followerId, followeeId);
+        Follow existing = findExistingFollow(followerId, followeeId);
+        log.warn("팔로우 생성 중 동시성 충돌 발생: followId={}", existing.getId());
+        return existing;
       }
       throw e; // UQ 외 제약 위반은 전파
     }
@@ -129,9 +132,15 @@ public class FollowService {
             .collect(Collectors.toMap(UserSummary::userId, Function.identity()));
 
     List<FollowDto> data = follows.stream()
-        .map(f -> followMapper.toDto(f,
-            summaryMap.get(f.getFollowerId()),
-            summaryMap.get(f.getFolloweeId())))
+        .map(f -> {
+          UserSummary follower = summaryMap.get(f.getFollowerId());
+          UserSummary followee = summaryMap.get(f.getFolloweeId());
+          if (follower == null || followee == null) {
+            log.warn("팔로우 사용자 정보를 조회할 수 없습니다: followId={}", f.getId());
+            throw FollowUserNotFoundException.withNone();
+          }
+          return followMapper.toDto(f, follower, followee);
+        })
         .toList();
 
     return new CursorPageResponse<>(data, page.nextCursor(), page.nextIdAfter(),
@@ -163,7 +172,7 @@ public class FollowService {
 
   private Follow findExistingFollow(UUID followerId, UUID followeeId) {
     return followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)
-        .orElseThrow();
+        .orElseThrow(FollowConflictException::withNone);
   }
 
   private boolean isUniqueViolation(DataIntegrityViolationException e) {

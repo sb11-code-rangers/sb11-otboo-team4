@@ -17,6 +17,7 @@ import com.sprint.mission.otboo.domain.social.directmessage.dto.DirectMessagePar
 import com.sprint.mission.otboo.domain.social.directmessage.dto.DirectMessageSendRequest;
 import com.sprint.mission.otboo.domain.social.directmessage.entity.DirectMessage;
 import com.sprint.mission.otboo.domain.social.directmessage.exception.DirectMessageForbiddenException;
+import com.sprint.mission.otboo.domain.social.directmessage.exception.DirectMessageUserNotFoundException;
 import com.sprint.mission.otboo.domain.social.directmessage.exception.SelfDirectMessageNotAllowedException;
 import com.sprint.mission.otboo.domain.social.directmessage.mapper.DirectMessageMapper;
 import com.sprint.mission.otboo.domain.social.directmessage.repository.DirectMessageRepository;
@@ -115,6 +116,25 @@ class DirectMessageServiceTest {
       assertThat(result.data()).isEmpty();
       assertThat(result.totalCount()).isZero();
       verify(userSummaryQueryRepository, never()).findByUserIds(any());
+    }
+
+    @Test
+    @DisplayName("사용자 정보를 조회할 수 없으면 DirectMessageUserNotFoundException을 던진다")
+    void 사용자_정보를_조회할_수_없으면_DirectMessageUserNotFoundException을_던진다() {
+      // given
+      UUID me = UUID.randomUUID();
+      UUID other = UUID.randomUUID();
+      DirectMessageParams params = new DirectMessageParams(other, null, null, 10);
+
+      DirectMessage message = DirectMessage.create(me, other, "안녕하세요?");
+      CursorPageResponse<DirectMessage> repoPage = new CursorPageResponse<>(
+          List.of(message), null, null, false, 1L, "createdAt", SortDirection.DESCENDING);
+      given(directMessageRepository.findDirectMessages(me, params)).willReturn(repoPage);
+      given(userSummaryQueryRepository.findByUserIds(any())).willReturn(List.of());
+
+      // when & then
+      assertThatThrownBy(() -> directMessageService.getDirectMessages(me, params))
+          .isInstanceOf(DirectMessageUserNotFoundException.class);
     }
   }
 

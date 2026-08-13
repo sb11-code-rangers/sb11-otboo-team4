@@ -6,6 +6,7 @@ import com.sprint.mission.otboo.domain.social.feed.dto.CommentCreateRequest;
 import com.sprint.mission.otboo.domain.social.feed.dto.CommentDto;
 import com.sprint.mission.otboo.domain.social.feed.dto.FeedCommentParams;
 import com.sprint.mission.otboo.domain.social.feed.entity.Comment;
+import com.sprint.mission.otboo.domain.social.feed.exception.AuthorNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedForbiddenException;
 import com.sprint.mission.otboo.domain.social.feed.exception.FeedNotFoundException;
 import com.sprint.mission.otboo.domain.social.feed.mapper.CommentMapper;
@@ -71,7 +72,14 @@ public class CommentService {
             .collect(Collectors.toMap(UserSummary::userId, Function.identity()));
 
     List<CommentDto> data = comments.stream()
-        .map(c -> commentMapper.toDto(c, summaryMap.get(c.getAuthorId())))
+        .map(c -> {
+          UserSummary author = summaryMap.get(c.getAuthorId());
+          if (author == null) {
+            log.warn("댓글 작성자 정보를 조회할 수 없습니다: commentId={}", c.getId());
+            throw AuthorNotFoundException.withNone();
+          }
+          return commentMapper.toDto(c, author);
+        })
         .toList();
 
     return new CursorPageResponse<>(data, page.nextCursor(), page.nextIdAfter(),
@@ -91,7 +99,7 @@ public class CommentService {
 
   private void validateAuthorMatchesCurrentUser(UUID authorId, UUID currentUserId) {
     if (!authorId.equals(currentUserId)) {
-      throw FeedForbiddenException.authorMismatch(currentUserId, authorId);
+      throw FeedForbiddenException.authorMismatch();
     }
   }
 

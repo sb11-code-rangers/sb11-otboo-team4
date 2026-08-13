@@ -11,6 +11,7 @@ import com.sprint.mission.otboo.domain.clothesrecommend.clothes.dto.ClothesDto;
 import com.sprint.mission.otboo.domain.clothesrecommend.clothes.service.ClothesService;
 import com.sprint.mission.otboo.domain.social.feed.dto.OotdSnapshot;
 import com.sprint.mission.otboo.domain.social.feed.exception.ClothesOwnershipException;
+import com.sprint.mission.otboo.domain.social.feed.exception.OotdNotFoundException;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -87,8 +88,8 @@ class OotdSnapshotProviderTest {
     }
 
     @Test
-    @DisplayName("일부 clothesId가 존재하지 않으면 해당 항목은 결과에서 제외된다")
-    void 일부_clothesId가_존재하지_않으면_해당_항목은_결과에서_제외된다() {
+    @DisplayName("일부 clothesId를 조회할 수 없으면 OotdNotFoundException을 던진다")
+    void 일부_clothesId를_조회할_수_없으면_OotdNotFoundException을_던진다() {
       // given
       UUID authorId = UUID.randomUUID();
       UUID existingId = UUID.randomUUID();
@@ -98,17 +99,17 @@ class OotdSnapshotProviderTest {
       ClothesDto dto = fm.giveMeBuilder(ClothesDto.class)
           .set("id", existingId)
           .set("ownerId", authorId)
-          .set("name", "패딩")
           .sample();
-      // getClothesByIds는 없는 id를 조용히 제외 (ClothesService 구현)
       when(clothesService.getClothesByIds(clothesIds)).thenReturn(List.of(dto));
 
-      // when
-      List<OotdSnapshot> result = ootdSnapshotProvider.readOotds(clothesIds, authorId);
-
-      // then
-      assertThat(result).hasSize(1);
-      assertThat(result.get(0).clothesId()).isEqualTo(existingId);
+      // when & then
+      assertThatThrownBy(() -> ootdSnapshotProvider.readOotds(clothesIds, authorId))
+          .isInstanceOf(OotdNotFoundException.class)
+          .satisfies(ex -> {
+            OotdNotFoundException e = (OotdNotFoundException) ex;
+            assertThat(e.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(e.getDetails()).isEmpty();
+          });
     }
 
     @Test

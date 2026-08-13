@@ -7,6 +7,7 @@ import com.sprint.mission.otboo.domain.social.directmessage.dto.DirectMessagePar
 import com.sprint.mission.otboo.domain.social.directmessage.dto.DirectMessageSendRequest;
 import com.sprint.mission.otboo.domain.social.directmessage.entity.DirectMessage;
 import com.sprint.mission.otboo.domain.social.directmessage.exception.DirectMessageForbiddenException;
+import com.sprint.mission.otboo.domain.social.directmessage.exception.DirectMessageUserNotFoundException;
 import com.sprint.mission.otboo.domain.social.directmessage.exception.SelfDirectMessageNotAllowedException;
 import com.sprint.mission.otboo.domain.social.directmessage.mapper.DirectMessageMapper;
 import com.sprint.mission.otboo.domain.social.directmessage.repository.DirectMessageRepository;
@@ -69,9 +70,15 @@ public class DirectMessageService {
             .collect(Collectors.toMap(UserSummary::userId, Function.identity()));
 
     List<DirectMessageDto> data = messages.stream()
-        .map(m -> directMessageMapper.toDto(m,
-            summaryMap.get(m.getSenderId()),
-            summaryMap.get(m.getReceiverId())))
+        .map(m -> {
+          UserSummary sender = summaryMap.get(m.getSenderId());
+          UserSummary receiver = summaryMap.get(m.getReceiverId());
+          if (sender == null || receiver == null) {
+            log.warn("DM 사용자 정보를 조회할 수 없습니다: dmId={}", m.getId());
+            throw DirectMessageUserNotFoundException.withNone();
+          }
+          return directMessageMapper.toDto(m, sender, receiver);
+        })
         .toList();
 
     return new CursorPageResponse<>(data, page.nextCursor(), page.nextIdAfter(),
