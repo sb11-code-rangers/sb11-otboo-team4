@@ -1,6 +1,7 @@
-package com.sprint.mission.otboo.global.temppassword.registry;
+package com.sprint.mission.otboo.global.temppassword.registry.impl;
 
 import com.sprint.mission.otboo.global.temppassword.properties.TempPasswordProperties;
+import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;

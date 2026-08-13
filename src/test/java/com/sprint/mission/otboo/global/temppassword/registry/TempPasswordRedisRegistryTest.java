@@ -3,6 +3,7 @@ package com.sprint.mission.otboo.global.temppassword.registry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sprint.mission.otboo.global.temppassword.properties.TempPasswordProperties;
+import com.sprint.mission.otboo.global.temppassword.registry.impl.TempPasswordRedisRegistry;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;

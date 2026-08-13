@@ -1,5 +1,6 @@
-package com.sprint.mission.otboo.global.temppassword.generator;
+package com.sprint.mission.otboo.global.temppassword.generator.impl;
 
+import com.sprint.mission.otboo.global.temppassword.generator.TempPasswordGenerator;
 import java.security.SecureRandom;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
