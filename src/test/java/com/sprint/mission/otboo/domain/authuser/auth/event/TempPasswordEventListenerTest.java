@@ -2,7 +2,7 @@ package com.sprint.mission.otboo.domain.authuser.auth.event;
 
 import static org.mockito.Mockito.verify;
 
-import com.sprint.mission.otboo.global.mail.MailService;
+import com.sprint.mission.otboo.global.mail.service.MailService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

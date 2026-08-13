@@ -1,6 +1,6 @@
 package com.sprint.mission.otboo.domain.authuser.auth.event;
 
-import com.sprint.mission.otboo.global.mail.MailService;
+import com.sprint.mission.otboo.global.mail.service.MailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

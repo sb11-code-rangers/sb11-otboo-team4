@@ -1,6 +1,7 @@
-package com.sprint.mission.otboo.global.mail;
+package com.sprint.mission.otboo.global.mail.service.impl;
 
 import com.sprint.mission.otboo.global.mail.exception.MailSendErrorException;
+import com.sprint.mission.otboo.global.mail.service.MailService;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;

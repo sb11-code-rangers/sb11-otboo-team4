@@ -1,6 +1,7 @@
 package com.sprint.mission.otboo.global.mail;
 
 import com.sprint.mission.otboo.global.mail.exception.MailSendErrorException;
+import com.sprint.mission.otboo.global.mail.service.impl.GoogleSmtpMailService;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.DisplayName;

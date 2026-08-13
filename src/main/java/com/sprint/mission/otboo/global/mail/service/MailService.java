@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.mail;
+package com.sprint.mission.otboo.global.mail.service;
 
 public interface MailService {
 
