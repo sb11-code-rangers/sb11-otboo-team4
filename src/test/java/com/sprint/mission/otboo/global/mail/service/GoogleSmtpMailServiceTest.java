@@ -1,4 +1,4 @@
-package com.sprint.mission.otboo.global.mail;
+package com.sprint.mission.otboo.global.mail.service;
 
 import com.sprint.mission.otboo.global.mail.exception.MailSendErrorException;
 import com.sprint.mission.otboo.global.mail.service.impl.GoogleSmtpMailService;
