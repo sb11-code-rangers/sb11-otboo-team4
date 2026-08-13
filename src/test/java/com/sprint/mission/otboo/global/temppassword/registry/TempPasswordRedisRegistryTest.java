@@ -121,6 +121,13 @@ class TempPasswordRedisRegistryTest {
       assertThat(ttl).isPositive();
       assertThat(ttl).isLessThanOrEqualTo(Duration.ofMinutes(3).toSeconds());
     }
+
+    @Test
+    @DisplayName("설정된 만료 시간을 분 단위로 반환한다")
+    void 설정된_만료_시간을_분_단위로_반환한다() {
+      // when & then
+      assertThat(registry.getExpirationMinutes()).isEqualTo(3);
+    }
   }
 
   @Nested

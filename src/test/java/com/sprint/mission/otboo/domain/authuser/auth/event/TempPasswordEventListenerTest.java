@@ -30,13 +30,13 @@ class TempPasswordEventListenerTest {
     void 이벤트를_받으면_MailService로_임시_비밀번호_메일을_전송한다() {
       // given
       TempPasswordRequestedEvent event =
-          new TempPasswordRequestedEvent("hong@test.com", "temp-password!");
+          new TempPasswordRequestedEvent("hong@test.com", "temp-password!", 3);
 
       // when
       tempPasswordEventListener.handler(event);
 
       // then
-      verify(mailService).sendTempPassword("hong@test.com", "temp-password!");
+      verify(mailService).sendTempPassword("hong@test.com", "temp-password!", 3);
     }
   }
 }

@@ -57,7 +57,7 @@ class GoogleSmtpMailServiceTest {
           .willReturn("<html>임시 비밀번호 안내</html>");
 
       // when
-      mailService.sendTempPassword("hong@test.com", "raw-temp-password");
+      mailService.sendTempPassword("hong@test.com", "raw-temp-password", 3);
 
       // then
       verify(mockMailSender).send(mimeMessage);
@@ -75,7 +75,7 @@ class GoogleSmtpMailServiceTest {
           .willReturn("<html></html>");
 
       // when
-      mailService.sendTempPassword("hong@test.com", "raw-temp-password");
+      mailService.sendTempPassword("hong@test.com", "raw-temp-password", 3);
 
       // then
       ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
@@ -102,7 +102,8 @@ class GoogleSmtpMailServiceTest {
           .given(mockMailSender).send(any(MimeMessage.class));
 
       // when & then
-      assertThatThrownBy(() -> mailService.sendTempPassword("hong@test.com", "raw-temp-password"))
+      assertThatThrownBy(
+          () -> mailService.sendTempPassword("hong@test.com", "raw-temp-password", 3))
           .isInstanceOf(MailSendErrorException.class)
           .hasCauseInstanceOf(MailSendException.class);
     }
@@ -119,7 +120,7 @@ class GoogleSmtpMailServiceTest {
 
       // when & then
       assertThatThrownBy(
-          () -> mailService.sendTempPassword("hong@test.com", "super-secret-raw-password"))
+          () -> mailService.sendTempPassword("hong@test.com", "super-secret-raw-password", 3))
           .hasMessageContaining("hong@test.com")
           .hasMessageNotContaining("super-secret-raw-password");
     }

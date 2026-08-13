@@ -238,6 +238,7 @@ class AuthServiceTest {
       User user = User.create("홍길동", "hong@test.com", "encoded-password");
       given(userRepository.findByEmail("hong@test.com")).willReturn(Optional.of(user));
       given(tempPasswordRegistry.issue(user.getId())).willReturn("temp-password!");
+      given(tempPasswordRegistry.getExpirationMinutes()).willReturn(3);
 
       ResetPasswordRequest request = new ResetPasswordRequest("hong@test.com");
 
@@ -247,7 +248,7 @@ class AuthServiceTest {
       // then
       verify(tempPasswordRegistry).issue(user.getId());
       verify(eventPublisher).publishEvent(
-          new TempPasswordRequestedEvent("hong@test.com", "temp-password!"));
+          new TempPasswordRequestedEvent("hong@test.com", "temp-password!", 3));
     }
 
     @Test
