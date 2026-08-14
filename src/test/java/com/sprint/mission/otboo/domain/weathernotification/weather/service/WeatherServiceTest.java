@@ -9,8 +9,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.navercorp.fixturemonkey.FixtureMonkey;
 import com.navercorp.fixturemonkey.api.introspector.ConstructorPropertiesArbitraryIntrospector;
+import com.sprint.mission.otboo.domain.weathernotification.weather.dto.HumidityDto;
 import com.sprint.mission.otboo.domain.weathernotification.weather.dto.LocationDto;
+import com.sprint.mission.otboo.domain.weathernotification.weather.dto.PrecipitationDto;
+import com.sprint.mission.otboo.domain.weathernotification.weather.dto.TemperatureDto;
 import com.sprint.mission.otboo.domain.weathernotification.weather.dto.WeatherDto;
+import com.sprint.mission.otboo.domain.weathernotification.weather.dto.WindSpeedDto;
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.Weather;
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.WeatherGrid;
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.PrecipitationType;
@@ -164,6 +168,57 @@ class WeatherServiceTest {
 
       // then
       assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("stale해서_WeatherRefresher가_반환한_결과에도_오늘_이전_예보는_필터링된다")
+    void stale해서_WeatherRefresher가_반환한_결과에도_오늘_이전_예보는_필터링된다() {
+      // given
+      double latitude = 37.5674783;
+      double longitude = 126.9884121;
+      WeatherGrid weatherGrid = WeatherGrid.create(60, 127);
+      given(locationResolver.resolveWeatherGrid(new KmaGridPoint(60, 127)))
+          .willReturn(weatherGrid);
+
+      // 어제(D-1) 데이터만 존재, 오늘 데이터는 없음(stale)
+      Weather yesterdayWeather = Weather.create(weatherGrid, Instant.parse("2026-07-26T08:00:00Z"),
+          Instant.parse("2026-07-26T00:00:00Z"), SkyStatus.CLEAR, PrecipitationType.NONE, 0.0,
+          0.0, 60.0, 0.0, 26.0, 0.0, 24.0, 29.0, 2.0, WindStrength.WEAK);
+      given(weatherRepository.findLatestRevisions(eq(weatherGrid), any()))
+          .willReturn(List.of(yesterdayWeather));
+
+      // WeatherRefresher가 라이브 재조회 결과에 어제 데이터를 포함해 반환해도
+      Weather pastWeather = Weather.create(weatherGrid, LATEST_BASE_TIME.toInstant(),
+          Instant.parse("2026-07-26T00:00:00Z"), SkyStatus.CLEAR, PrecipitationType.NONE, 0.0,
+          0.0, 60.0, 0.0, 26.0, 0.0, 24.0, 29.0, 2.0, WindStrength.WEAK);
+      Weather todayWeather = Weather.create(weatherGrid, LATEST_BASE_TIME.toInstant(),
+          Instant.parse("2026-07-27T00:00:00Z"), SkyStatus.CLEAR, PrecipitationType.NONE, 0.0,
+          0.0, 65.0, 0.0, 28.0, 0.0, 25.0, 31.0, 2.0, WindStrength.WEAK);
+      given(weatherRefresher.refresh(weatherGrid, new KmaGridPoint(60, 127), LATEST_BASE_TIME))
+          .willReturn(List.of(pastWeather, todayWeather));
+
+      given(locationResolver.resolveLocationNames(latitude, longitude))
+          .willReturn(List.of("서울특별시", "중구", "명동"));
+
+      WeatherDto expectedDto = new WeatherDto(
+          todayWeather.getId(),
+          todayWeather.getForecastedAt(),
+          todayWeather.getForecastAt(),
+          new LocationDto(latitude, longitude, weatherGrid.getX(), weatherGrid.getY(),
+              List.of("서울특별시", "중구", "명동")),
+          SkyStatus.CLEAR,
+          new PrecipitationDto(PrecipitationType.NONE, 0.0, 65.0),
+          new HumidityDto(28.0, 0.0),
+          new TemperatureDto(25.0, 0.0, 25.0, 31.0),
+          new WindSpeedDto(2.0, WindStrength.WEAK));
+      given(weatherMapper.toDto(todayWeather, weatherGrid, latitude, longitude,
+          List.of("서울특별시", "중구", "명동"))).willReturn(expectedDto);
+
+      // when
+      List<WeatherDto> result = weatherService.getWeather(latitude, longitude);
+
+      // then — 오늘 이전(pastWeather) 예보는 응답에서 빠진다
+      assertThat(result).containsExactly(expectedDto);
     }
 
     @Test

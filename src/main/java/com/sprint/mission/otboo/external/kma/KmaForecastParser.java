@@ -16,8 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class KmaForecastParser {
 
@@ -120,9 +122,11 @@ public class KmaForecastParser {
         case "PCP" -> precipitationAmount += parsePrecipitationAmount(item.fcstValue());
         case "PTY" -> {
           int priority = parsePtyPriority(item.fcstValue(), item.fcstTime(), representativeTime);
+          PrecipitationType candidate =
+              priority >= 0 ? toPrecipitationType(item.fcstValue()) : PrecipitationType.NONE;
           if (priority > precipitationPriority) {
             precipitationPriority = priority;
-            precipitationType = toPrecipitationType(item.fcstValue());
+            precipitationType = candidate;
           }
         }
         default -> {
@@ -162,7 +166,10 @@ public class KmaForecastParser {
       case "2" -> PrecipitationType.RAIN_SNOW;
       case "3" -> PrecipitationType.SNOW;
       case "4" -> PrecipitationType.SHOWER;
-      default -> PrecipitationType.NONE;
+      default -> {
+        log.warn("알 수 없는 PTY 코드: {}", pty);
+        yield PrecipitationType.NONE;
+      }
     };
   }
 
@@ -171,7 +178,10 @@ public class KmaForecastParser {
       case "1" -> SkyStatus.CLEAR;
       case "3" -> SkyStatus.MOSTLY_CLOUDY;
       case "4" -> SkyStatus.CLOUDY;
-      default -> SkyStatus.CLEAR;
+      default -> {
+        log.warn("알 수 없는 SKY 코드: {}", skyCode);
+        yield SkyStatus.CLEAR;
+      }
     };
   }
 }
