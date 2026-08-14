@@ -10,11 +10,13 @@ import com.sprint.mission.otboo.security.usersession.properties.UserSessionPrope
 import com.sprint.mission.otboo.security.usersession.properties.enums.ConcurrentPolicyType;
 import com.sprint.mission.otboo.security.usersession.properties.enums.ExpirationPolicyType;
 import java.time.Duration;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
+@DisplayName("ConcurrentSessionPolicyConfig")
 class ConcurrentSessionPolicyConfigTest {
 
   private static final int MAX_DEVICE = 5;
@@ -29,9 +31,11 @@ class ConcurrentSessionPolicyConfigTest {
   }
 
   @Nested
+  @DisplayName("concurrentPolicy가 single일 때")
   class SingleSelection {
 
     @Test
+    @DisplayName("SingleDeviceConcurrentUserSessionPolicy 빈이 등록된다")
     void 성공_concurrentPolicy가_single이면_SingleDeviceConcurrentUserSessionPolicy빈이_등록된다() {
       // given & when
       contextRunner
@@ -47,9 +51,11 @@ class ConcurrentSessionPolicyConfigTest {
   }
 
   @Nested
+  @DisplayName("concurrentPolicy가 multi일 때")
   class MultiSelection {
 
     @Test
+    @DisplayName("MultiDeviceConcurrentUserSessionPolicy 빈이 등록된다")
     void 성공_concurrentPolicy가_multi이면_MultiDeviceConcurrentUserSessionPolicy빈이_등록된다() {
       // given & when
       contextRunner
@@ -65,9 +71,11 @@ class ConcurrentSessionPolicyConfigTest {
   }
 
   @Nested
+  @DisplayName("concurrentPolicy가 max일 때")
   class MaxSelection {
 
     @Test
+    @DisplayName("MaxDeviceConcurrentUserSessionPolicy 빈이 등록된다")
     void 성공_concurrentPolicy가_max이면_MaxDeviceConcurrentUserSessionPolicy빈이_등록된다() {
       // given & when
       contextRunner
@@ -82,6 +90,7 @@ class ConcurrentSessionPolicyConfigTest {
     }
 
     @Test
+    @DisplayName("UserSessionProperties의 maxDevices 값이 그대로 주입된다")
     void 성공_UserSessionProperties의_maxDevices값이_그대로_주입된다() {
       // given & when
       contextRunner
