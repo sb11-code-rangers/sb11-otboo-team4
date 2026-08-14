@@ -15,12 +15,14 @@ import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistr
 import com.sprint.mission.otboo.security.usersession.registry.decorator.ConcurrentPolicyUserSessionRegistry;
 import java.time.Clock;
 import java.time.Duration;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
+@DisplayName("UserSessionRegistryConfig")
 class UserSessionRegistryConfigTest {
 
   private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -33,9 +35,11 @@ class UserSessionRegistryConfigTest {
       .withBean(ConcurrentUserSessionPolicy.class, SingleDeviceConcurrentUserSessionPolicy::new);
 
   @Nested
+  @DisplayName("impl 값이 redis일 때")
   class RedisSelection {
 
     @Test
+    @DisplayName("ConcurrentPolicyUserSessionRegistry 빈이 등록된다")
     void 성공_impl값이_redis이면_ConcurrentPolicyUserSessionRegistry가_등록된다() {
       // given & when
       contextRunner
@@ -51,6 +55,7 @@ class UserSessionRegistryConfigTest {
     }
 
     @Test
+    @DisplayName("impl 값이 없으면 기본값으로 등록된다")
     void 성공_impl값이_없으면_기본값으로_등록된다() {
       // given & when
       contextRunner
