@@ -3,6 +3,7 @@ package com.sprint.mission.otboo.security.token.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sprint.mission.otboo.security.token.properties.TokenProperties;
+import com.sprint.mission.otboo.security.token.properties.enums.TokenImplType;
 import com.sprint.mission.otboo.security.token.provider.TokenProvider;
 import com.sprint.mission.otboo.security.token.provider.impl.JjwtTokenProvider;
 import com.sprint.mission.otboo.security.token.provider.impl.NimbusTokenProvider;
@@ -19,31 +20,25 @@ class TokenProviderConfigTest {
 
   private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
       .withUserConfiguration(TokenProviderConfig.class)
-      .withBean(Clock.class, Clock::systemUTC)
-      .withBean(TokenProperties.class,
-          () -> new TokenProperties(Duration.ofMinutes(15), Duration.ofDays(14), SECRET, SECRET));
+      .withBean(Clock.class, Clock::systemUTC);
+
+  private TokenProperties propertiesOf(TokenImplType impl) {
+    return new TokenProperties(Duration.ofMinutes(15), Duration.ofDays(14), SECRET, SECRET, impl);
+  }
 
   @Nested
   class NimbusSelection {
 
     @Test
-    void 성공_impl프로퍼티가_nimbus이면_NimbusTokenProvider빈이_등록된다() {
+    void 성공_impl값이_nimbus이면_NimbusTokenProvider빈이_등록된다() {
       // given & when
-      contextRunner.withPropertyValues("otboo.security.token.impl=nimbus").run(context -> {
-        // then
-        assertThat(context).hasSingleBean(TokenProvider.class);
-        assertThat(context.getBean(TokenProvider.class)).isInstanceOf(NimbusTokenProvider.class);
-      });
-    }
-
-    @Test
-    void 성공_impl프로퍼티가_없으면_기본값으로_NimbusTokenProvider빈이_등록된다() {
-      // given & when
-      contextRunner.run(context -> {
-        // then
-        assertThat(context).hasSingleBean(TokenProvider.class);
-        assertThat(context.getBean(TokenProvider.class)).isInstanceOf(NimbusTokenProvider.class);
-      });
+      contextRunner
+          .withBean(TokenProperties.class, () -> propertiesOf(TokenImplType.NIMBUS))
+          .run(context -> {
+            // then
+            assertThat(context).hasSingleBean(TokenProvider.class);
+            assertThat(context.getBean(TokenProvider.class)).isInstanceOf(NimbusTokenProvider.class);
+          });
     }
   }
 
@@ -51,26 +46,15 @@ class TokenProviderConfigTest {
   class JjwtSelection {
 
     @Test
-    void 성공_impl프로퍼티가_jjwt이면_JjwtTokenProvider빈이_등록된다() {
+    void 성공_impl값이_jjwt이면_JjwtTokenProvider빈이_등록된다() {
       // given & when
-      contextRunner.withPropertyValues("otboo.security.token.impl=jjwt").run(context -> {
-        // then
-        assertThat(context).hasSingleBean(TokenProvider.class);
-        assertThat(context.getBean(TokenProvider.class)).isInstanceOf(JjwtTokenProvider.class);
-      });
-    }
-  }
-
-  @Nested
-  class InvalidSelection {
-
-    @Test
-    void 실패_impl프로퍼티가_알수없는_값이면_TokenProvider빈이_등록되지_않는다() {
-      // given & when
-      contextRunner.withPropertyValues("otboo.security.token.impl=unknown").run(context -> {
-        // then
-        assertThat(context).doesNotHaveBean(TokenProvider.class);
-      });
+      contextRunner
+          .withBean(TokenProperties.class, () -> propertiesOf(TokenImplType.JJWT))
+          .run(context -> {
+            // then
+            assertThat(context).hasSingleBean(TokenProvider.class);
+            assertThat(context.getBean(TokenProvider.class)).isInstanceOf(JjwtTokenProvider.class);
+          });
     }
   }
 }
