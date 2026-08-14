@@ -12,16 +12,10 @@ import org.springframework.context.annotation.Configuration;
 public class UserSessionExpirationPolicyConfig {
 
   @Bean
-  @ConditionalOnProperty(name = "otboo.security.user-session.expiration-policy", havingValue = "absolute", matchIfMissing = true)
-  public UserSessionExpirationPolicy absoluteUserSessionExpirationPolicy(
-      UserSessionProperties userSessionProperties) {
-    return new AbsoluteExpirationPolicy(userSessionProperties.userSessionExpiration());
-  }
-
-  @Bean
-  @ConditionalOnProperty(name = "otboo.security.user-session.expiration-policy", havingValue = "sliding")
-  public UserSessionExpirationPolicy slidingUserSessionExpirationPolicy(
-      UserSessionProperties userSessionProperties) {
-    return new SlidingExpirationPolicy(userSessionProperties.userSessionExpiration());
+  public UserSessionExpirationPolicy expirationPolicy(UserSessionProperties properties) {
+    return switch (properties.expirationPolicy()) {
+      case ABSOLUTE -> new AbsoluteExpirationPolicy(properties.userSessionExpiration());
+      case SLIDING -> new SlidingExpirationPolicy(properties.userSessionExpiration());
+    };
   }
 }
