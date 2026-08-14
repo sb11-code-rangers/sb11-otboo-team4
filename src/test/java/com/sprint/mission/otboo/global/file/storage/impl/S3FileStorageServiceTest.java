@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.otboo.global.file.exception.FileStorageException;
+import com.sprint.mission.otboo.global.file.properties.FileImplType;
 import com.sprint.mission.otboo.global.file.properties.FileProperties;
 import com.sprint.mission.otboo.global.file.validator.FileValidator;
 import java.util.Set;
@@ -35,7 +36,7 @@ class S3FileStorageServiceTest {
   private S3Client s3Client;
 
   private final FileProperties fileProperties = new FileProperties(
-      "s3", "https://cdn.otboo.us", 1024 * 1024, Set.of("jpg", "png"),
+      FileImplType.S3, "https://cdn.otboo.us", 1024 * 1024, Set.of("jpg", "png"),
       null, new FileProperties.S3("otboo-image", "ap-northeast-2"));
 
   private S3FileStorageService buildService() {
