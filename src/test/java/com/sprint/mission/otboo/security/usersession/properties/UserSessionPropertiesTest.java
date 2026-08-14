@@ -61,4 +61,47 @@ class UserSessionPropertiesTest {
       assertThat(violations).isNotEmpty();
     }
   }
+
+  @Nested
+  class MaxDevicesRequiredWhenMax {
+
+    @Test
+    void 실패_concurrentPolicy가_max인데_maxDevices가_없으면_위반이_발생한다() {
+      // given
+      UserSessionProperties props = new UserSessionProperties(Duration.ofDays(14), null,
+          ExpirationPolicyType.ABSOLUTE, ConcurrentPolicyType.MAX, UserSessionRegistryType.REDIS);
+
+      // when
+      Set<ConstraintViolation<UserSessionProperties>> violations = VALIDATOR.validate(props);
+
+      // then
+      assertThat(violations).isNotEmpty();
+    }
+
+    @Test
+    void 성공_concurrentPolicy가_max이고_maxDevices가_있으면_위반이_없다() {
+      // given
+      UserSessionProperties props = new UserSessionProperties(Duration.ofDays(14), 3,
+          ExpirationPolicyType.ABSOLUTE, ConcurrentPolicyType.MAX, UserSessionRegistryType.REDIS);
+
+      // when
+      Set<ConstraintViolation<UserSessionProperties>> violations = VALIDATOR.validate(props);
+
+      // then
+      assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void 성공_concurrentPolicy가_max가_아니면_maxDevices가_없어도_위반이_없다() {
+      // given
+      UserSessionProperties props = new UserSessionProperties(Duration.ofDays(14), null,
+          ExpirationPolicyType.ABSOLUTE, ConcurrentPolicyType.MULTI, UserSessionRegistryType.REDIS);
+
+      // when
+      Set<ConstraintViolation<UserSessionProperties>> violations = VALIDATOR.validate(props);
+
+      // then
+      assertThat(violations).isEmpty();
+    }
+  }
 }
