@@ -150,4 +150,22 @@ class S3FileStorageServiceTest {
       verify(s3Client, never()).deleteObject(any(DeleteObjectRequest.class));
     }
   }
+
+  @Nested
+  @DisplayName("종료 (close)")
+  class Close {
+
+    @Test
+    @DisplayName("컨텍스트 종료 시 S3Client를 닫는다")
+    void 컨텍스트_종료_시_S3Client를_닫는다() {
+      // given
+      S3FileStorageService s3FileStorageService = buildService();
+
+      // when
+      s3FileStorageService.close();
+
+      // then
+      verify(s3Client).close();
+    }
+  }
 }
