@@ -10,9 +10,14 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import java.time.Duration;
 import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Configuration;
 
+@DisplayName("UserSessionProperties")
 class UserSessionPropertiesTest {
 
   private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
@@ -102,6 +107,45 @@ class UserSessionPropertiesTest {
 
       // then
       assertThat(violations).isEmpty();
+    }
+  }
+
+  @Nested
+  @DisplayName("설정값 바인딩 실패")
+  class EnumBindingFailure {
+
+    @Configuration
+    @EnableConfigurationProperties(UserSessionProperties.class)
+    static class TestConfig {
+
+    }
+
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+        .withUserConfiguration(TestConfig.class)
+        .withPropertyValues("otboo.security.user-session.user-session-expiration=14d");
+
+    @Test
+    @DisplayName("concurrentPolicy가 지원하지 않는 값이면 컨텍스트 기동에 실패한다")
+    void 실패_concurrentPolicy가_지원하지_않는_값이면_컨텍스트_기동에_실패한다() {
+      // when & then
+      contextRunner.withPropertyValues("otboo.security.user-session.concurrent-policy=unknown")
+          .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    @DisplayName("expirationPolicy가 지원하지 않는 값이면 컨텍스트 기동에 실패한다")
+    void 실패_expirationPolicy가_지원하지_않는_값이면_컨텍스트_기동에_실패한다() {
+      // when & then
+      contextRunner.withPropertyValues("otboo.security.user-session.expiration-policy=unknown")
+          .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    @DisplayName("impl이 지원하지 않는 값이면 컨텍스트 기동에 실패한다")
+    void 실패_impl이_지원하지_않는_값이면_컨텍스트_기동에_실패한다() {
+      // when & then
+      contextRunner.withPropertyValues("otboo.security.user-session.impl=unknown")
+          .run(context -> assertThat(context).hasFailed());
     }
   }
 }
