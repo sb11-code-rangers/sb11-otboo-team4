@@ -57,7 +57,7 @@ public abstract class AbstractTokenProviderContractTest {
   }
 
   @Nested
-  class 생성자 {
+  class Constructor {
 
     @Test
     void 성공_유효한_시크릿이면_정상적으로_생성된다() {
