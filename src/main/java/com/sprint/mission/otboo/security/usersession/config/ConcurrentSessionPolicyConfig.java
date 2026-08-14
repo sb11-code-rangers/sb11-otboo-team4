@@ -5,7 +5,6 @@ import com.sprint.mission.otboo.security.usersession.policy.impl.MaxDeviceConcur
 import com.sprint.mission.otboo.security.usersession.policy.impl.MultiDeviceConcurrentUserSessionPolicy;
 import com.sprint.mission.otboo.security.usersession.policy.impl.SingleDeviceConcurrentUserSessionPolicy;
 import com.sprint.mission.otboo.security.usersession.properties.UserSessionProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
