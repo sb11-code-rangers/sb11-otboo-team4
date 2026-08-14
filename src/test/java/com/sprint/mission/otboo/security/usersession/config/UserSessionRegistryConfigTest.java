@@ -7,6 +7,10 @@ import com.sprint.mission.otboo.security.usersession.policy.ConcurrentUserSessio
 import com.sprint.mission.otboo.security.usersession.policy.UserSessionExpirationPolicy;
 import com.sprint.mission.otboo.security.usersession.policy.impl.AbsoluteExpirationPolicy;
 import com.sprint.mission.otboo.security.usersession.policy.impl.SingleDeviceConcurrentUserSessionPolicy;
+import com.sprint.mission.otboo.security.usersession.properties.UserSessionProperties;
+import com.sprint.mission.otboo.security.usersession.properties.enums.ConcurrentPolicyType;
+import com.sprint.mission.otboo.security.usersession.properties.enums.ExpirationPolicyType;
+import com.sprint.mission.otboo.security.usersession.properties.enums.UserSessionRegistryType;
 import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;
 import com.sprint.mission.otboo.security.usersession.registry.decorator.ConcurrentPolicyUserSessionRegistry;
 import java.time.Clock;
@@ -32,38 +36,33 @@ class UserSessionRegistryConfigTest {
   class RedisSelection {
 
     @Test
-    void 성공_impl프로퍼티가_redis이면_UserSessionRegistry빈이_ConcurrentPolicyUserSessionRegistry로_등록된다() {
+    void 성공_impl값이_redis이면_ConcurrentPolicyUserSessionRegistry가_등록된다() {
       // given & when
-      contextRunner.withPropertyValues("otboo.security.user-session.impl=redis").run(context -> {
-        // then
-        assertThat(context).hasSingleBean(UserSessionRegistry.class);
-        assertThat(context.getBean(UserSessionRegistry.class))
-            .isInstanceOf(ConcurrentPolicyUserSessionRegistry.class);
-      });
+      contextRunner
+          .withBean(UserSessionProperties.class, () -> new UserSessionProperties(
+              Duration.ofDays(14), null, ExpirationPolicyType.ABSOLUTE,
+              ConcurrentPolicyType.SINGLE, UserSessionRegistryType.REDIS))
+          .run(context -> {
+            // then
+            assertThat(context).hasSingleBean(UserSessionRegistry.class);
+            assertThat(context.getBean(UserSessionRegistry.class))
+                .isInstanceOf(ConcurrentPolicyUserSessionRegistry.class);
+          });
     }
 
     @Test
-    void 성공_프로퍼티가_없으면_기본값으로_UserSessionRegistry빈이_등록된다() {
+    void 성공_impl값이_없으면_기본값으로_등록된다() {
       // given & when
-      contextRunner.run(context -> {
-        // then
-        assertThat(context).hasSingleBean(UserSessionRegistry.class);
-        assertThat(context.getBean(UserSessionRegistry.class))
-            .isInstanceOf(ConcurrentPolicyUserSessionRegistry.class);
-      });
-    }
-  }
-
-  @Nested
-  class InvalidSelection {
-
-    @Test
-    void 실패_impl프로퍼티가_알수없는_값이면_UserSessionRegistry빈이_등록되지_않는다() {
-      // given & when
-      contextRunner.withPropertyValues("otboo.security.user-session.impl=unknown").run(context -> {
-        // then
-        assertThat(context).doesNotHaveBean(UserSessionRegistry.class);
-      });
+      contextRunner
+          .withBean(UserSessionProperties.class, () -> new UserSessionProperties(
+              Duration.ofDays(14), null, ExpirationPolicyType.ABSOLUTE,
+              ConcurrentPolicyType.SINGLE, null))
+          .run(context -> {
+            // then
+            assertThat(context).hasSingleBean(UserSessionRegistry.class);
+            assertThat(context.getBean(UserSessionRegistry.class))
+                .isInstanceOf(ConcurrentPolicyUserSessionRegistry.class);
+          });
     }
   }
 }
