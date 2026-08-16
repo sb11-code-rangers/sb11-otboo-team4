@@ -18,12 +18,12 @@ import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.SkyStatus;
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.WindStrength;
 import com.sprint.mission.otboo.domain.weathernotification.weather.repository.WeatherRepository;
-import com.sprint.mission.otboo.external.kma.dto.DailyWeatherForecastDto;
+import com.sprint.mission.otboo.external.kma.dto.WeatherForecastSlotDto;
 import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +40,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @ExtendWith(MockitoExtension.class)
 class WeatherWriterTest {
 
-  private static final ZoneId KST = ZoneId.of("Asia/Seoul");
   private static final FixtureMonkey FIXTURE_MONKEY = FixtureMonkey.builder()
       .objectIntrospector(ConstructorPropertiesArbitraryIntrospector.INSTANCE)
       .build();
@@ -58,53 +57,60 @@ class WeatherWriterTest {
     weatherWriter = new WeatherWriter(weatherRepository, jdbcTemplate);
   }
 
+
   @Nested
-  @DisplayName("Build")
-  class Build {
+  @DisplayName("BuildSlots")
+  class BuildSlots {
 
     @Test
-    @DisplayName("전날_데이터가_없으면_diff는_null이다")
-    void 전날_데이터가_없으면_diff는_null이다() {
+    @DisplayName("슬롯의_baseline은_현재_값으로_채워진다")
+    void 슬롯의_baseline은_현재_값으로_채워진다() {
       // given
       WeatherGrid weatherGrid = WeatherGrid.create(60, 127);
       Instant forecastedAt = Instant.parse("2026-07-27T08:00:00Z");
-      DailyWeatherForecastDto todayForecast = FIXTURE_MONKEY.giveMeBuilder(
-              DailyWeatherForecastDto.class)
+      WeatherForecastSlotDto slot = FIXTURE_MONKEY.giveMeBuilder(WeatherForecastSlotDto.class)
           .set("date", LocalDate.of(2026, 7, 27))
+          .set("slotAt", Instant.parse("2026-07-27T00:00:00Z"))
           .set("temperatureCurrent", 28.0)
-          .set("humidityCurrent", 65.0)
+          .set("precipitationType", PrecipitationType.RAIN)
+          .set("precipitationProbability", 60.0)
+          .set("precipitationAmount", 5.0)
           .sample();
 
       // when
-      List<Weather> result = weatherWriter.build(weatherGrid, forecastedAt,
-          List.of(todayForecast), Map.of());
+      List<Weather> result = weatherWriter.buildSlots(weatherGrid, forecastedAt, List.of(slot),
+          Map.of());
 
       // then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0).getTemperatureCompared()).isNull();
-      assertThat(result.get(0).getHumidityCompared()).isNull();
+      Weather built = result.get(0);
+      assertThat(built.getBaselineTemperatureCurrent()).isEqualTo(28.0);
+      assertThat(built.getBaselinePrecipitationType()).isEqualTo(PrecipitationType.RAIN);
+      assertThat(built.getBaselinePrecipitationProbability()).isEqualTo(60.0);
+      assertThat(built.getBaselinePrecipitationAmount()).isEqualTo(5.0);
     }
 
     @Test
-    @DisplayName("전날_데이터가_있으면_diff를_계산한다")
-    void 전날_데이터가_있으면_diff를_계산한다() {
+    @DisplayName("어제_같은_슬롯이_있으면_diff를_계산한다")
+    void 어제_같은_슬롯이_있으면_diff를_계산한다() {
       // given
       WeatherGrid weatherGrid = WeatherGrid.create(60, 127);
       Instant forecastedAt = Instant.parse("2026-07-27T08:00:00Z");
-      Weather yesterdayWeather = Weather.create(weatherGrid,
-          Instant.parse("2026-07-26T08:00:00Z"), Instant.parse("2026-07-26T00:00:00Z"),
-          SkyStatus.CLEAR, PrecipitationType.NONE, 0.0, 0.0, 60.0, 0.0, 26.0, 0.0, 24.0, 29.0, 2.0,
-          WindStrength.WEAK);
-      DailyWeatherForecastDto todayForecast = FIXTURE_MONKEY.giveMeBuilder(
-              DailyWeatherForecastDto.class)
+      Instant slotAt = Instant.parse("2026-07-27T00:00:00Z");
+      Weather yesterdaySameSlot = Weather.create(weatherGrid,
+          Instant.parse("2026-07-26T08:00:00Z"), slotAt.minus(1, ChronoUnit.DAYS),
+          SkyStatus.CLEAR, PrecipitationType.NONE, 0.0, 0.0, 60.0, null, 26.0, null, 24.0, 29.0,
+          2.0, WindStrength.WEAK, 26.0, PrecipitationType.NONE, 0.0, 0.0);
+      WeatherForecastSlotDto slot = FIXTURE_MONKEY.giveMeBuilder(WeatherForecastSlotDto.class)
           .set("date", LocalDate.of(2026, 7, 27))
+          .set("slotAt", slotAt)
           .set("temperatureCurrent", 28.0)
           .set("humidityCurrent", 65.0)
           .sample();
 
       // when
-      List<Weather> result = weatherWriter.build(weatherGrid, forecastedAt,
-          List.of(todayForecast), Map.of(LocalDate.of(2026, 7, 26), yesterdayWeather));
+      List<Weather> result = weatherWriter.buildSlots(weatherGrid, forecastedAt, List.of(slot),
+          Map.of(slotAt.minus(1, ChronoUnit.DAYS), yesterdaySameSlot));
 
       // then
       assertThat(result).hasSize(1);
@@ -114,74 +120,65 @@ class WeatherWriterTest {
   }
 
   @Nested
-  @DisplayName("Save")
-  class Save {
+  @DisplayName("SaveSlots")
+  class SaveSlots {
 
     @Test
-    @DisplayName("build한_결과를_한_번의_배치_insert로_저장하고_한_번의_조회로_반환한다")
-    void build한_결과를_한_번의_배치_insert로_저장하고_한_번의_조회로_반환한다() {
+    @DisplayName("upsert_SQL은_baseline_컬럼을_DO_UPDATE_SET_목록에서_제외한다")
+    void upsert_SQL은_baseline_컬럼을_DO_UPDATE_SET_목록에서_제외한다() {
       // given
       WeatherGrid weatherGrid = WeatherGrid.create(60, 127);
       Instant forecastedAt = Instant.parse("2026-07-27T08:00:00Z");
-      DailyWeatherForecastDto day1 = FIXTURE_MONKEY.giveMeBuilder(DailyWeatherForecastDto.class)
+      WeatherForecastSlotDto slot = FIXTURE_MONKEY.giveMeBuilder(WeatherForecastSlotDto.class)
           .set("date", LocalDate.of(2026, 7, 27))
-          .set("skyStatus", SkyStatus.CLEAR)
-          .set("precipitationType", PrecipitationType.NONE)
+          .set("slotAt", Instant.parse("2026-07-27T00:00:00Z"))
           .sample();
-      DailyWeatherForecastDto day2 = FIXTURE_MONKEY.giveMeBuilder(DailyWeatherForecastDto.class)
-          .set("date", LocalDate.of(2026, 7, 28))
-          .set("skyStatus", SkyStatus.CLEAR)
-          .set("precipitationType", PrecipitationType.NONE)
-          .sample();
-      Instant forecastAt1 = day1.date().atStartOfDay(KST).toInstant();
-      Instant forecastAt2 = day2.date().atStartOfDay(KST).toInstant();
-      Weather persisted1 = Weather.create(weatherGrid, forecastedAt, forecastAt1,
-          day1.skyStatus(), day1.precipitationType(), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-          WindStrength.WEAK);
-      Weather persisted2 = Weather.create(weatherGrid, forecastedAt, forecastAt2,
-          day2.skyStatus(), day2.precipitationType(), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-          WindStrength.WEAK);
-      given(jdbcTemplate.batchUpdate(anyString(), any(BatchPreparedStatementSetter.class)))
-          .willReturn(new int[]{1, 1});
-      given(weatherRepository.findAllByWeatherGridAndForecastedAtAndForecastAtInOrderByForecastAt(
-          eq(weatherGrid), eq(forecastedAt), eq(List.of(forecastAt1, forecastAt2))))
-          .willReturn(List.of(persisted1, persisted2));
-
-      // when
-      List<Weather> result = weatherWriter.save(weatherGrid, forecastedAt, List.of(day1, day2),
-          Map.of());
-
-      // then - insert는 한 번의 배치로, 조회도 한 번만 = 총 2회 왕복
-      assertThat(result).containsExactly(persisted1, persisted2);
-      ArgumentCaptor<BatchPreparedStatementSetter> setterCaptor = ArgumentCaptor.forClass(
-          BatchPreparedStatementSetter.class);
-      verify(jdbcTemplate, times(1)).batchUpdate(anyString(), setterCaptor.capture());
-      assertThat(setterCaptor.getValue().getBatchSize()).isEqualTo(2);
-      verify(weatherRepository, times(1))
-          .findAllByWeatherGridAndForecastedAtAndForecastAtInOrderByForecastAt(eq(weatherGrid),
-              eq(forecastedAt), eq(List.of(forecastAt1, forecastAt2)));
-    }
-
-    @Test
-    @DisplayName("전일_비교값이_null이면_JDBC에도_NULL로_바인딩한다")
-    void 전일_비교값이_null이면_JDBC에도_NULL로_바인딩한다() throws Exception {
-      // given
-      WeatherGrid weatherGrid = WeatherGrid.create(60, 127);
-      Instant forecastedAt = Instant.parse("2026-07-27T08:00:00Z");
-      DailyWeatherForecastDto day1 = FIXTURE_MONKEY.giveMeBuilder(DailyWeatherForecastDto.class)
-          .set("date", LocalDate.of(2026, 7, 27))
-          .set("skyStatus", SkyStatus.CLEAR)
-          .set("precipitationType", PrecipitationType.NONE)
-          .sample();
-      Instant forecastAt1 = day1.date().atStartOfDay(KST).toInstant();
+      Instant slotAt = slot.slotAt();
       given(jdbcTemplate.batchUpdate(anyString(), any(BatchPreparedStatementSetter.class)))
           .willReturn(new int[]{1});
       given(weatherRepository.findAllByWeatherGridAndForecastedAtAndForecastAtInOrderByForecastAt(
-          eq(weatherGrid), eq(forecastedAt), eq(List.of(forecastAt1))))
+          eq(weatherGrid), eq(forecastedAt), eq(List.of(slotAt))))
           .willReturn(List.of());
 
-      // when - Map.of()라 전일 데이터가 없어 build() 결과의 비교값이 null
-      weatherWriter.save(weatherGrid, forecastedAt, List.of(day1), Map.of());
+      // when
+      weatherWriter.saveSlots(weatherGrid, forecastedAt, List.of(slot), Map.of());
+
+      // then
+      ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+      verify(jdbcTemplate).batchUpdate(sqlCaptor.capture(),
+          any(BatchPreparedStatementSetter.class));
+      assertThat(sqlCaptor.getValue())
+          .contains("ON CONFLICT (weather_grid_id, forecast_at) DO UPDATE SET")
+          .doesNotContain("baseline_temperature_current = EXCLUDED")
+          .doesNotContain("baseline_precipitation_type = EXCLUDED")
+          .doesNotContain("baseline_precipitation_probability = EXCLUDED")
+          .doesNotContain("baseline_precipitation_amount = EXCLUDED");
+    }
+
+    @Test
+    @DisplayName("baseline_파라미터를_PreparedStatement에_바인딩한다")
+    void baseline_파라미터를_PreparedStatement에_바인딩한다() throws Exception {
+      // given
+      WeatherGrid weatherGrid = WeatherGrid.create(60, 127);
+      Instant forecastedAt = Instant.parse("2026-07-27T08:00:00Z");
+      WeatherForecastSlotDto slot = FIXTURE_MONKEY.giveMeBuilder(WeatherForecastSlotDto.class)
+          .set("date", LocalDate.of(2026, 7, 27))
+          .set("slotAt", Instant.parse("2026-07-27T00:00:00Z"))
+          .set("skyStatus", SkyStatus.CLEAR)
+          .set("temperatureCurrent", 28.0)
+          .set("precipitationType", PrecipitationType.RAIN)
+          .set("precipitationProbability", 60.0)
+          .set("precipitationAmount", 5.0)
+          .sample();
+      Instant slotAt = slot.slotAt();
+      given(jdbcTemplate.batchUpdate(anyString(), any(BatchPreparedStatementSetter.class)))
+          .willReturn(new int[]{1});
+      given(weatherRepository.findAllByWeatherGridAndForecastedAtAndForecastAtInOrderByForecastAt(
+          eq(weatherGrid), eq(forecastedAt), eq(List.of(slotAt))))
+          .willReturn(List.of());
+
+      // when
+      weatherWriter.saveSlots(weatherGrid, forecastedAt, List.of(slot), Map.of());
 
       // then
       ArgumentCaptor<BatchPreparedStatementSetter> setterCaptor = ArgumentCaptor.forClass(
@@ -189,27 +186,10 @@ class WeatherWriterTest {
       verify(jdbcTemplate).batchUpdate(anyString(), setterCaptor.capture());
       PreparedStatement preparedStatement = mock(PreparedStatement.class);
       setterCaptor.getValue().setValues(preparedStatement, 0);
-      verify(preparedStatement).setObject(10, null, Types.DOUBLE);
-      verify(preparedStatement).setObject(12, null, Types.DOUBLE);
-    }
-
-    @Test
-    @DisplayName("예보가_없으면_배치_insert도_조회도_호출하지_않는다")
-    void 예보가_없으면_배치_insert도_조회도_호출하지_않는다() {
-      // given
-      WeatherGrid weatherGrid = WeatherGrid.create(60, 127);
-      Instant forecastedAt = Instant.parse("2026-07-27T08:00:00Z");
-
-      // when
-      List<Weather> result = weatherWriter.save(weatherGrid, forecastedAt, List.of(), Map.of());
-
-      // then
-      assertThat(result).isEmpty();
-      verify(jdbcTemplate, never()).batchUpdate(anyString(),
-          any(BatchPreparedStatementSetter.class));
-      verify(weatherRepository, never())
-          .findAllByWeatherGridAndForecastedAtAndForecastAtInOrderByForecastAt(any(), any(),
-              any());
+      verify(preparedStatement).setObject(17, 28.0, Types.DOUBLE);
+      verify(preparedStatement).setString(18, "RAIN");
+      verify(preparedStatement).setObject(19, 60.0, Types.DOUBLE);
+      verify(preparedStatement).setObject(20, 5.0, Types.DOUBLE);
     }
   }
 }

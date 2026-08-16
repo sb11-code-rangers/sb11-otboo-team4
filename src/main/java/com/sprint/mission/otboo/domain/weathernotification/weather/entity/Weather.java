@@ -27,8 +27,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "weathers", uniqueConstraints = @UniqueConstraint(
-    name = "UQ_weathers_weather_grid_id_forecast_at_forecasted_at",
-    columnNames = {"weather_grid_id", "forecast_at", "forecasted_at"}))
+    name = "UQ_weathers_weather_grid_id_forecast_at",
+    columnNames = {"weather_grid_id", "forecast_at"}))
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -88,6 +88,19 @@ public class Weather {
   @Column(name = "wind_as_word", nullable = false)
   private WindStrength windAsWord;
 
+  @Column(name = "baseline_temperature_current")
+  private Double baselineTemperatureCurrent;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "baseline_precipitation_type")
+  private PrecipitationType baselinePrecipitationType;
+
+  @Column(name = "baseline_precipitation_probability")
+  private Double baselinePrecipitationProbability;
+
+  @Column(name = "baseline_precipitation_amount")
+  private Double baselinePrecipitationAmount;
+
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private Instant createdAt;
@@ -97,7 +110,9 @@ public class Weather {
       SkyStatus skyStatus, PrecipitationType precipitationType, double precipitationAmount,
       double precipitationProbability, double humidityCurrent, Double humidityCompared,
       double temperatureCurrent, Double temperatureCompared, double temperatureMin,
-      double temperatureMax, double windSpeed, WindStrength windAsWord) {
+      double temperatureMax, double windSpeed, WindStrength windAsWord,
+      Double baselineTemperatureCurrent, PrecipitationType baselinePrecipitationType,
+      Double baselinePrecipitationProbability, Double baselinePrecipitationAmount) {
     this.weatherGrid = weatherGrid;
     this.forecastedAt = forecastedAt;
     this.forecastAt = forecastAt;
@@ -113,13 +128,19 @@ public class Weather {
     this.temperatureMax = temperatureMax;
     this.windSpeed = windSpeed;
     this.windAsWord = windAsWord;
+    this.baselineTemperatureCurrent = baselineTemperatureCurrent;
+    this.baselinePrecipitationType = baselinePrecipitationType;
+    this.baselinePrecipitationProbability = baselinePrecipitationProbability;
+    this.baselinePrecipitationAmount = baselinePrecipitationAmount;
   }
 
   public static Weather create(WeatherGrid weatherGrid, Instant forecastedAt, Instant forecastAt,
       SkyStatus skyStatus, PrecipitationType precipitationType, double precipitationAmount,
       double precipitationProbability, double humidityCurrent, Double humidityCompared,
       double temperatureCurrent, Double temperatureCompared, double temperatureMin,
-      double temperatureMax, double windSpeed, WindStrength windAsWord) {
+      double temperatureMax, double windSpeed, WindStrength windAsWord,
+      Double baselineTemperatureCurrent, PrecipitationType baselinePrecipitationType,
+      Double baselinePrecipitationProbability, Double baselinePrecipitationAmount) {
     return Weather.builder()
         .weatherGrid(weatherGrid)
         .forecastedAt(forecastedAt)
@@ -136,6 +157,10 @@ public class Weather {
         .temperatureMax(temperatureMax)
         .windSpeed(windSpeed)
         .windAsWord(windAsWord)
+        .baselineTemperatureCurrent(baselineTemperatureCurrent)
+        .baselinePrecipitationType(baselinePrecipitationType)
+        .baselinePrecipitationProbability(baselinePrecipitationProbability)
+        .baselinePrecipitationAmount(baselinePrecipitationAmount)
         .build();
   }
 }
