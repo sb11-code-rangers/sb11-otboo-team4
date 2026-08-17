@@ -25,8 +25,8 @@ public record LocationRequest(
     Integer y,
 
     @NotNull(message = "locationNames는 필수입니다.")
-    @Size(max = 10, message = "locationNames는 10개를 넘을 수 없습니다.")
-    List<String> locationNames
+    @Size(min = 4, max = 4, message = "locationNames는 4개여야 합니다.")
+    List<@NotNull(message = "지역 이름에 빈 값이 포함될 수 없습니다.") String> locationNames
 ) {
 
 }
