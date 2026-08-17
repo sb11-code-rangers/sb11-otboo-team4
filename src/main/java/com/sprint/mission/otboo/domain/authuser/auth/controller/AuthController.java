@@ -37,7 +37,7 @@ public class AuthController implements AuthApi {
     authService.signOut(refreshToken);
     refreshTokenCookieProvider.clear(response);
     return ResponseEntity
-        .status(HttpStatus.OK)
+        .status(HttpStatus.NO_CONTENT)
         .build();
   }
 

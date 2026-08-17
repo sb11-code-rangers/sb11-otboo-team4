@@ -55,12 +55,12 @@ class AuthControllerTest {
   class SignOut {
 
     @Test
-    @DisplayName("정상 요청이면 200을 반환하고 refresh 쿠키를 삭제한다")
-    void 정상_요청이면_200을_반환하고_refresh_쿠키를_삭제한다() throws Exception {
+    @DisplayName("정상 요청이면 204를 반환하고 refresh 쿠키를 삭제한다")
+    void 정상_요청이면_204를_반환하고_refresh_쿠키를_삭제한다() throws Exception {
       // given & when & then
       mockMvc.perform(post("/api/auth/sign-out")
               .cookie(new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "refresh-token")))
-          .andExpect(status().isOk());
+          .andExpect(status().isNoContent());
 
       verify(authService).signOut("refresh-token");
       verify(refreshTokenCookieProvider).clear(any());

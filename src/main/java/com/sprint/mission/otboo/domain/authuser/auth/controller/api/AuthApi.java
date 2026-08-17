@@ -18,7 +18,7 @@ public interface AuthApi {
 
   @Operation(summary = "로그아웃", description = "로그아웃합니다.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+      @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
       @ApiResponse(responseCode = "500", description = "Redis 장애")
   })
   ResponseEntity<Void> signOut(String refreshToken, HttpServletResponse response);
