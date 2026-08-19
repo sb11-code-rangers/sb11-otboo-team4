@@ -104,7 +104,7 @@ class UserSessionRedisRegistryTest implements RedisTestContainerSupport {
 
       // then
       Long ttlMillis = redisTemplate.getExpire(
-          "auth:user-session:" + userId + ":" + session.sessionId(), TimeUnit.MILLISECONDS);
+          "auth:user-session:{" + userId + "}:" + session.sessionId(), TimeUnit.MILLISECONDS);
       assertThat(ttlMillis).isPositive();
       assertThat(ttlMillis).isLessThanOrEqualTo(TTL.toMillis());
     }

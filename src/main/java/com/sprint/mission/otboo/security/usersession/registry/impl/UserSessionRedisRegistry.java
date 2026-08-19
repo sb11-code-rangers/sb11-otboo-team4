@@ -218,10 +218,16 @@ public class UserSessionRedisRegistry implements UserSessionRegistry {
   }
 
   private String sessionKeyPrefix(UUID userId) {
-    return SESSION_KEY_PREFIX + userId + ":";
+    return SESSION_KEY_PREFIX + userHashTag(userId) + ":";
   }
 
   private String indexKey(UUID userId) {
-    return INDEX_KEY_PREFIX + userId;
+    return INDEX_KEY_PREFIX + userHashTag(userId);
+  }
+
+  // Redis Cluster 해시 태그. 세션 키와 인덱스 키가 접두사는 달라도 이 부분만으로 슬롯이
+  // 정해지므로, 같은 유저의 두 키가 항상 같은 슬롯에 배치되어 MULTI/스크립트에서 함께 다룰 수 있다.
+  private String userHashTag(UUID userId) {
+    return "{" + userId + "}";
   }
 }
