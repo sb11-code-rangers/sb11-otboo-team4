@@ -23,6 +23,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -173,6 +174,7 @@ class UserSessionRedisRegistryConcurrencyTest implements RedisTestContainerSuppo
   }
 
   @Test
+  @DisplayName("기기 수 정원에서 동시에 여러 번 로그인해도 정확히 maxDevices개만 남고 좀비가 생기지 않는다")
   void 성공_기기수_정원에서_동시에_여러번_로그인해도_정확히_maxDevices개만_남고_좀비가_생기지_않는다()
       throws Exception {
     // given: 정원(maxDevices)을 이미 채워둔 상태에서 동시에 로그인이 몰리는 상황을 재현한다.

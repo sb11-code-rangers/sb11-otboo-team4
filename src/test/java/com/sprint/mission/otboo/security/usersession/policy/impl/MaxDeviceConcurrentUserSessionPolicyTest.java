@@ -10,6 +10,7 @@ import com.sprint.mission.otboo.security.usersession.dto.UserSession;
 import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;
 import java.time.Instant;
 import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,7 @@ class MaxDeviceConcurrentUserSessionPolicyTest {
   class Issue {
 
     @Test
+    @DisplayName("registry의 evictOldestAndIssue를 maxDevices와 함께 호출하고 결과를 그대로 반환한다")
     void 성공_registry의_evictOldestAndIssue를_maxDevices와_함께_호출하고_결과를_그대로_반환한다() {
       // given
       UUID userId = UUID.randomUUID();
@@ -46,6 +48,7 @@ class MaxDeviceConcurrentUserSessionPolicyTest {
     }
 
     @Test
+    @DisplayName("evictOldestAndIssue만 호출하고 findAllByUserId나 revoke나 일반 issue는 호출하지 않는다")
     void 성공_evictOldestAndIssue만_호출하고_findAllByUserId나_revoke나_일반_issue는_호출하지_않는다() {
       // given
       UUID userId = UUID.randomUUID();

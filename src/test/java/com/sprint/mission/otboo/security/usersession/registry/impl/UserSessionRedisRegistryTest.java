@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -290,6 +291,7 @@ class UserSessionRedisRegistryTest implements RedisTestContainerSupport {
   class EvictOldestAndSave {
 
     @Test
+    @DisplayName("세션 수가 maxDevices보다 적으면 회수 없이 저장만 한다")
     void 성공_세션수가_maxDevices보다_적으면_회수없이_저장만_한다() {
       // given
       UUID userId = newUserId();
@@ -307,6 +309,7 @@ class UserSessionRedisRegistryTest implements RedisTestContainerSupport {
     }
 
     @Test
+    @DisplayName("세션 수가 정확히 maxDevices면 가장 오래된 세션 1개만 회수하고 저장한다")
     void 성공_세션수가_정확히_maxDevices면_가장_오래된_세션_1개만_회수하고_저장한다() {
       // given
       UUID userId = newUserId();
@@ -327,6 +330,7 @@ class UserSessionRedisRegistryTest implements RedisTestContainerSupport {
     }
 
     @Test
+    @DisplayName("세션 수가 maxDevices를 초과하면 초과분과 여유분을 합쳐 회수하고 저장한다")
     void 성공_세션수가_maxDevices를_초과하면_초과분과_여유분을_합쳐_회수하고_저장한다() {
       // given: maxDevices=3인데 이미 4개 -> 4-3+1=2개(가장 오래된 두 개) 회수해야 저장 후 3개가 된다
       UUID userId = newUserId();
@@ -350,6 +354,7 @@ class UserSessionRedisRegistryTest implements RedisTestContainerSupport {
     }
 
     @Test
+    @DisplayName("저장한 세션을 그대로 반환한다")
     void 성공_저장한_세션을_그대로_반환한다() {
       // given
       UUID userId = newUserId();
@@ -453,6 +458,7 @@ class UserSessionRedisRegistryTest implements RedisTestContainerSupport {
   class EvictOldestAndIssueDefaultMethod {
 
     @Test
+    @DisplayName("새 세션을 발급하고 저장까지 한다")
     void 성공_새_세션을_발급하고_저장까지_한다() {
       // given
       UUID userId = newUserId();
@@ -466,6 +472,7 @@ class UserSessionRedisRegistryTest implements RedisTestContainerSupport {
     }
 
     @Test
+    @DisplayName("maxDevices 이상이면 가장 오래된 세션을 회수하고 발급한다")
     void 성공_maxDevices_이상이면_가장_오래된_세션을_회수하고_발급한다() {
       // given
       UUID userId = newUserId();
