@@ -294,6 +294,83 @@ class UserSessionRedisRegistryTest {
   }
 
   @Nested
+  class EvictOldestAndSave {
+
+    @Test
+    void 성공_세션수가_maxDevices보다_적으면_회수없이_저장만_한다() {
+      // given
+      UUID userId = newUserId();
+      UserSession s1 = newSession(userId, NOW.minusSeconds(20));
+      UserSession s2 = newSession(userId, NOW.minusSeconds(10));
+      registry.save(s1, NOW.plus(TTL));
+      registry.save(s2, NOW.plus(TTL));
+      UserSession fresh = newSession(userId, NOW);
+
+      // when
+      registry.evictOldestAndSave(fresh, 3, NOW.plus(TTL));
+
+      // then
+      assertThat(registry.findAllByUserId(userId)).containsExactlyInAnyOrder(s1, s2, fresh);
+    }
+
+    @Test
+    void 성공_세션수가_정확히_maxDevices면_가장_오래된_세션_1개만_회수하고_저장한다() {
+      // given
+      UUID userId = newUserId();
+      UserSession oldest = newSession(userId, NOW.minusSeconds(30));
+      UserSession middle = newSession(userId, NOW.minusSeconds(20));
+      UserSession newest = newSession(userId, NOW.minusSeconds(10));
+      registry.save(oldest, NOW.plus(TTL));
+      registry.save(middle, NOW.plus(TTL));
+      registry.save(newest, NOW.plus(TTL));
+      UserSession fresh = newSession(userId, NOW);
+
+      // when
+      registry.evictOldestAndSave(fresh, 3, NOW.plus(TTL));
+
+      // then
+      assertThat(registry.findAllByUserId(userId)).containsExactlyInAnyOrder(middle, newest, fresh);
+      assertThat(registry.find(userId, oldest.sessionId())).isEmpty();
+    }
+
+    @Test
+    void 성공_세션수가_maxDevices를_초과하면_초과분과_여유분을_합쳐_회수하고_저장한다() {
+      // given: maxDevices=3인데 이미 4개 -> 4-3+1=2개(가장 오래된 두 개) 회수해야 저장 후 3개가 된다
+      UUID userId = newUserId();
+      UserSession oldest = newSession(userId, NOW.minusSeconds(40));
+      UserSession second = newSession(userId, NOW.minusSeconds(30));
+      UserSession third = newSession(userId, NOW.minusSeconds(20));
+      UserSession newest = newSession(userId, NOW.minusSeconds(10));
+      registry.save(oldest, NOW.plus(TTL));
+      registry.save(second, NOW.plus(TTL));
+      registry.save(third, NOW.plus(TTL));
+      registry.save(newest, NOW.plus(TTL));
+      UserSession fresh = newSession(userId, NOW);
+
+      // when
+      registry.evictOldestAndSave(fresh, 3, NOW.plus(TTL));
+
+      // then
+      assertThat(registry.findAllByUserId(userId)).containsExactlyInAnyOrder(third, newest, fresh);
+      assertThat(registry.find(userId, oldest.sessionId())).isEmpty();
+      assertThat(registry.find(userId, second.sessionId())).isEmpty();
+    }
+
+    @Test
+    void 성공_저장한_세션을_그대로_반환한다() {
+      // given
+      UUID userId = newUserId();
+      UserSession fresh = newSession(userId, NOW);
+
+      // when
+      UserSession result = registry.evictOldestAndSave(fresh, 3, NOW.plus(TTL));
+
+      // then
+      assertThat(result).isEqualTo(fresh);
+    }
+  }
+
+  @Nested
   class CompareAndRotate {
 
     @Test
@@ -376,6 +453,39 @@ class UserSessionRedisRegistryTest {
       // then
       assertThat(registry.findAllByUserId(userId)).containsExactly(fresh);
       assertThat(registry.find(userId, old.sessionId())).isEmpty();
+    }
+  }
+
+  @Nested
+  class EvictOldestAndIssueDefaultMethod {
+
+    @Test
+    void 성공_새_세션을_발급하고_저장까지_한다() {
+      // given
+      UUID userId = newUserId();
+
+      // when
+      UserSession issued = registry.evictOldestAndIssue(userId, 3, NOW);
+
+      // then
+      assertThat(issued.userId()).isEqualTo(userId);
+      assertThat(registry.find(userId, issued.sessionId())).contains(issued);
+    }
+
+    @Test
+    void 성공_maxDevices_이상이면_가장_오래된_세션을_회수하고_발급한다() {
+      // given
+      UUID userId = newUserId();
+      UserSession oldest = registry.issue(userId, NOW.minusSeconds(20));
+      registry.issue(userId, NOW.minusSeconds(10));
+
+      // when
+      UserSession issued = registry.evictOldestAndIssue(userId, 2, NOW);
+
+      // then
+      assertThat(registry.findAllByUserId(userId)).hasSize(2);
+      assertThat(registry.find(userId, oldest.sessionId())).isEmpty();
+      assertThat(registry.find(userId, issued.sessionId())).contains(issued);
     }
   }
 

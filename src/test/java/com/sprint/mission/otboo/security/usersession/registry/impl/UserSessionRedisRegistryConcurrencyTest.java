@@ -180,6 +180,58 @@ class UserSessionRedisRegistryConcurrencyTest {
   }
 
   @Test
+  void 성공_기기수_정원에서_동시에_여러번_로그인해도_정확히_maxDevices개만_남고_좀비가_생기지_않는다()
+      throws Exception {
+    // given: 정원(maxDevices)을 이미 채워둔 상태에서 동시에 로그인이 몰리는 상황을 재현한다.
+    UUID userId = UUID.randomUUID();
+    int maxDevices = 3;
+    List<UserSession> preExisting = new ArrayList<>();
+    for (int i = 0; i < maxDevices; i++) {
+      preExisting.add(registry.issue(userId, NOW.minusSeconds(100 - i)));
+    }
+
+    CountDownLatch ready = new CountDownLatch(CONCURRENCY);
+    CountDownLatch start = new CountDownLatch(1);
+    List<Callable<UserSession>> tasks = new ArrayList<>();
+    for (int i = 0; i < CONCURRENCY; i++) {
+      tasks.add(() -> {
+        ready.countDown();
+        start.await();
+        return registry.evictOldestAndIssue(userId, maxDevices, Instant.now());
+      });
+    }
+
+    // when
+    List<Future<UserSession>> futures = new ArrayList<>();
+    for (Callable<UserSession> task : tasks) {
+      futures.add(executor.submit(task));
+    }
+    ready.await();
+    start.countDown();
+
+    List<UserSession> issuedSessions = new ArrayList<>();
+    for (Future<UserSession> future : futures) {
+      issuedSessions.add(future.get());
+    }
+
+    // then
+    // 스크립트가 매번 "오래된 것 1개 회수 + 신규 1개 발급"을 원자적으로 하므로, 정원에서 시작해
+    // 20번을 동시에 더 로그인해도 최종 세션 수는 항상 정확히 maxDevices개로 유지되어야 한다.
+    List<UserSession> remaining = registry.findAllByUserId(userId);
+    assertThat(remaining).hasSize(maxDevices);
+
+    List<UUID> remainingIds = remaining.stream().map(UserSession::sessionId).toList();
+    List<UserSession> allAttempted = new ArrayList<>(preExisting);
+    allAttempted.addAll(issuedSessions);
+    for (UserSession attempted : allAttempted) {
+      if (!remainingIds.contains(attempted.sessionId())) {
+        // 좀비 검증: 밀려난 세션은 find()로도 완전히 사라져 있어야 한다.
+        assertThat(registry.find(userId, attempted.sessionId())).isEmpty();
+      }
+    }
+  }
+
+  @Test
   void 성공_revokeAll과_동시에_save가_들어와도_해시와_인덱스_상태가_항상_일치한다() throws Exception {
     int trials = 30;
     for (int trial = 0; trial < trials; trial++) {
