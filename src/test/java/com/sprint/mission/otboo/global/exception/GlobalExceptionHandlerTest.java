@@ -145,7 +145,9 @@ class GlobalExceptionHandlerTest {
     void _401을_반환한다() throws Exception {
       mockMvc.perform(get("/test/cookie"))
           .andExpect(status().isUnauthorized())
-          .andExpect(jsonPath("$.exceptionName").value("MissingRequestCookieException"));
+          .andExpect(jsonPath("$.exceptionName").value("MissingRequestCookieException"))
+          .andExpect(jsonPath("$.message").value("필수 쿠키가 누락되었습니다."))
+          .andExpect(jsonPath("$.details.cookie").value("test-cookie"));
     }
   }
 
