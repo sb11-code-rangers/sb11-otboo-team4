@@ -3,6 +3,7 @@ package com.sprint.mission.otboo.domain.weathernotification.weather.service;
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.Weather;
 import com.sprint.mission.otboo.domain.weathernotification.weather.entity.WeatherGrid;
 import com.sprint.mission.otboo.domain.weathernotification.weather.repository.WeatherRepository;
+import com.sprint.mission.otboo.domain.weathernotification.weather.singleflight.SingleFlightRegistry;
 import com.sprint.mission.otboo.external.kma.KmaBaseTimeCalculator.BaseTime;
 import com.sprint.mission.otboo.external.kma.KmaForecastFetcher;
 import com.sprint.mission.otboo.external.kma.KmaGridConverter.KmaGridPoint;
@@ -11,8 +12,15 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +43,56 @@ public class WeatherRefresher {
   private final KmaForecastFetcher kmaForecastFetcher;
   private final WeatherWriter weatherWriter;
   private final Clock clock;
+  private final SingleFlightRegistry singleFlightRegistry;
+  private final WeatherCacheProvider weatherCacheProvider;
+  private final RepresentativeSlotSelector representativeSlotSelector;
+
+  private final ConcurrentHashMap<InFlightKey, CompletableFuture<List<Weather>>> inFlight =
+      new ConcurrentHashMap<>();
+
+  // 로컬 in-flight 다음에 SingleFlightRegistry(분산 락)까지 태우는 2단 방어.
+  public CompletableFuture<List<Weather>> refreshSlotsAsync(WeatherGrid weatherGrid,
+      KmaGridPoint grid, BaseTime baseTime, List<Weather> dbSlots, Executor executor) {
+    InFlightKey key = new InFlightKey(weatherGrid.getId(), baseTime);
+    String lockKey =
+        "weather:" + weatherGrid.getId() + ":" + baseTime.baseDate() + baseTime.baseTime();
+    CompletableFuture<List<Weather>> future = inFlight.computeIfAbsent(key, k ->
+        singleFlightRegistry.execute(
+            lockKey,
+            () -> {
+              List<Weather> refreshed = refreshSlots(weatherGrid, grid, baseTime);
+              List<Weather> merged = refreshed.isEmpty()
+                  ? dbSlots : mergeByForecastAt(dbSlots, refreshed);
+              weatherCacheProvider.putSlots(weatherGrid, merged);
+              return merged;
+            },
+            executor,
+            () -> {
+              List<Weather> cached = weatherCacheProvider.findCachedSlots(weatherGrid);
+              // WeatherService.isStale과 동일하게 "오늘 대표 슬롯" 기준으로만 신선도를 판단한다.
+              // 슬롯 하나라도 최신이면 통과시키면, 부분 갱신(파서 게이트로 일부 날짜 누락)된
+              // 미래 슬롯만 최신이고 오늘 슬롯은 stale인 경우를 신선함으로 오판한다.
+              LocalDate today = LocalDate.now(clock.withZone(KST));
+              boolean stale = representativeSlotSelector.isStale(cached, today, clock.instant(),
+                  baseTime);
+              return stale ? Optional.empty() : Optional.of(cached);
+            }));
+    // singleFlightRegistry.execute가 이미 완료된 future를 반환하면 whenComplete가
+    // 즉시(동기) 실행되므로, computeIfAbsent 밖에서 맵을 수정해야 재귀 수정을 피할 수 있다
+    future.whenComplete((r, e) -> inFlight.remove(key, future));
+    return future;
+  }
+
+  private List<Weather> mergeByForecastAt(List<Weather> slots, List<Weather> refreshed) {
+    Map<Instant, Weather> byForecastAt = new LinkedHashMap<>();
+    slots.forEach(slot -> byForecastAt.put(slot.getForecastAt(), slot));
+    refreshed.forEach(slot -> byForecastAt.put(slot.getForecastAt(), slot));
+    return new ArrayList<>(byForecastAt.values());
+  }
+
+  private record InFlightKey(UUID weatherGridId, BaseTime baseTime) {
+
+  }
 
   public List<Weather> refreshSlots(WeatherGrid weatherGrid, KmaGridPoint grid,
       BaseTime baseTime) {

@@ -29,23 +29,9 @@ public class AsyncConfig implements AsyncConfigurer {
     return executor;
   }
 
-  @Bean(name = "notificationExecutor")
-  public Executor notificationExecutor() {
-    // TODO: 현재 아래 설정은 임시 값. 팀 논의 필요 지점
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(2);
-    executor.setMaxPoolSize(4);
-    executor.setQueueCapacity(50);
-    executor.setThreadNamePrefix("notification-async-");
-    executor.setTaskDecorator(new MdcTaskDecorator());
-    executor.initialize();
-    return executor;
-  }
-
   @Bean(name = "sseDisconnectExecutor")
   public Executor sseDisconnectExecutor() {
     // TODO: 현재 아래 설정은 임시 값. 팀 논의 필요 지점
-    // notificationExecutor와 분리 — 로그인발 SSE 정리가 실제 알림 전송과 풀을 다투지 않도록 함
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(2);
     executor.setMaxPoolSize(4);
@@ -84,6 +70,55 @@ public class AsyncConfig implements AsyncConfigurer {
     // 큐가 차면 기본 AbortPolicy가 태스크를 버려 DM이 조용히 유실된다.
     // Redis 구독 스레드에서 직접 실행해 백프레셔를 건다.
     executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+    executor.initialize();
+    return executor;
+  }
+
+  @Bean(name = "singleFlightListenerExecutor")
+  public Executor singleFlightListenerExecutor() {
+    // TODO: 현재 아래 설정은 임시 값. 팀 논의 필요 지점
+    // sseListenerExecutor와 분리 — single-flight 완료(done/failed) 메시지는 비리더 요청이
+    // 그 자리에서 기다리는 지연 민감 신호라, SSE emitter IO 지연이 이 풀까지 잠식하면 안 된다.
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(2);
+    executor.setMaxPoolSize(4);
+    executor.setQueueCapacity(100);
+    executor.setThreadNamePrefix("single-flight-listener-");
+    executor.setTaskDecorator(new MdcTaskDecorator());
+    executor.initialize();
+    return executor;
+  }
+
+  @Bean(name = "weatherRefreshExecutor")
+  public Executor weatherRefreshExecutor() {
+    // TODO: 현재 아래 설정은 임시 값. 팀 논의 필요 지점
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(4);
+    executor.setMaxPoolSize(8);
+    executor.setQueueCapacity(50);
+    executor.setThreadNamePrefix("weather-refresh-");
+    executor.setTaskDecorator(new MdcTaskDecorator());
+    // 포화 시 요청(서블릿) 스레드에서 외부 호출을 대신 실행하지 않는다 - 거부 예외는
+    // WeatherService의 폴백 경로에서 처리한다.
+    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+    executor.initialize();
+    return executor;
+  }
+
+  @Bean(name = "kakaoLocationExecutor")
+  public Executor kakaoLocationExecutor() {
+    // TODO: 현재 아래 설정은 임시 값. 팀 논의 필요 지점
+    // weatherRefreshExecutor와 분리 - 기상청/카카오는 서로 다른 외부 시스템(응답 속도·쿼터·장애
+    // 패턴이 다름)이라 한쪽이 느려지거나 막혀도 다른 쪽 처리 능력까지 잠식되지 않게 한다
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(4);
+    executor.setMaxPoolSize(8);
+    executor.setQueueCapacity(50);
+    executor.setThreadNamePrefix("kakao-location-");
+    executor.setTaskDecorator(new MdcTaskDecorator());
+    // 포화 시 요청(서블릿) 스레드에서 외부 호출을 대신 실행하지 않는다 - 거부 예외는
+    // WeatherService의 폴백 경로에서 처리한다.
+    executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
     executor.initialize();
     return executor;
   }
