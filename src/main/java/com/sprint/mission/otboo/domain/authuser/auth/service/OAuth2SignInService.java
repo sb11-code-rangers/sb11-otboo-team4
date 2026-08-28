@@ -50,7 +50,15 @@ public class OAuth2SignInService {
   public SignInDto signIn(OAuth2Provider provider, String providerId, String providerEmail,
       String providerName, UUID explicitLinkUserId) {
 
-    User user = findLinkedUser(provider, providerId)
+    Optional<User> linkedUser = findLinkedUser(provider, providerId);
+    if (explicitLinkUserId != null) {
+      linkedUser.filter(owner -> !owner.getId().equals(explicitLinkUserId))
+          .ifPresent(owner -> {
+            throw SocialAccountAlreadyLinkedException.withNone();
+          });
+    }
+
+    User user = linkedUser
         .orElseGet(() -> explicitLinkUserId != null
             ? linkToLoggedInUser(explicitLinkUserId, provider, providerId, providerEmail)
             : resolveAnonymousUser(provider, providerId, providerEmail, providerName));
