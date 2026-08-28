@@ -17,12 +17,14 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 class OAuth2LoginFailureHandlerTest {
 
   private static final String FAILURE_URI = "http://localhost:8080/#/sign-in";
+  private static final String LINK_URI = "http://localhost:8080/#/settings";
 
   private OAuth2LoginFailureHandler failureHandler;
 
   @BeforeEach
   void setUp() {
-    OAuth2Properties oAuth2Properties = new OAuth2Properties("http://localhost:8080/#/", FAILURE_URI);
+    OAuth2Properties oAuth2Properties =
+        new OAuth2Properties("http://localhost:8080/#/", FAILURE_URI, LINK_URI);
     failureHandler = new OAuth2LoginFailureHandler(oAuth2Properties);
   }
 

@@ -16,7 +16,12 @@ class OAuth2PropertiesTest {
   private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
 
   private static OAuth2Properties properties(String successRedirectUri, String failureRedirectUri) {
-    return new OAuth2Properties(successRedirectUri, failureRedirectUri);
+    return new OAuth2Properties(successRedirectUri, failureRedirectUri, "https://otboo.us/oauth/link");
+  }
+
+  private static OAuth2Properties propertiesWithLink(String linkRedirectUri) {
+    return new OAuth2Properties(
+        "https://otboo.us/oauth/success", "https://otboo.us/oauth/failure", linkRedirectUri);
   }
 
   @Nested
@@ -72,6 +77,37 @@ class OAuth2PropertiesTest {
     void 실패_blank이면_위반이_발생한다() {
       // given
       OAuth2Properties props = properties("https://otboo.us/oauth/success", "   ");
+
+      // when
+      Set<ConstraintViolation<OAuth2Properties>> violations = VALIDATOR.validate(props);
+
+      // then
+      assertThat(violations).isNotEmpty();
+    }
+  }
+
+  @Nested
+  @DisplayName("linkRedirectUri 검증")
+  class LinkRedirectUri {
+
+    @Test
+    @DisplayName("성공_값이_있으면_위반이_없다")
+    void 성공_값이_있으면_위반이_없다() {
+      // given
+      OAuth2Properties props = propertiesWithLink("https://otboo.us/oauth/link");
+
+      // when
+      Set<ConstraintViolation<OAuth2Properties>> violations = VALIDATOR.validate(props);
+
+      // then
+      assertThat(violations).isEmpty();
+    }
+
+    @Test
+    @DisplayName("실패_blank이면_위반이_발생한다")
+    void 실패_blank이면_위반이_발생한다() {
+      // given
+      OAuth2Properties props = propertiesWithLink("   ");
 
       // when
       Set<ConstraintViolation<OAuth2Properties>> violations = VALIDATOR.validate(props);

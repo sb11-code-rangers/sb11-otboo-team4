@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.JwtDto;
 import com.sprint.mission.otboo.domain.authuser.auth.dto.response.SignInDto;
 import com.sprint.mission.otboo.domain.authuser.auth.exception.AccountLockedException;
+import com.sprint.mission.otboo.domain.authuser.auth.exception.SocialAccountAlreadyLinkedException;
 import com.sprint.mission.otboo.domain.authuser.auth.service.OAuth2SignInService;
 import com.sprint.mission.otboo.domain.authuser.user.dto.response.UserDto;
 import com.sprint.mission.otboo.domain.authuser.user.entity.enums.OAuth2Provider;
@@ -47,6 +48,7 @@ class OAuth2LoginSuccessHandlerTest {
 
   private static final String SUCCESS_URI = "http://localhost:8080/#/";
   private static final String FAILURE_URI = "http://localhost:8080/#/sign-in";
+  private static final String LINK_URI = "http://localhost:8080/#/settings";
 
   @Mock
   private OAuth2SignInService oAuth2SignInService;
@@ -64,7 +66,7 @@ class OAuth2LoginSuccessHandlerTest {
 
   @BeforeEach
   void setUp() {
-    OAuth2Properties oAuth2Properties = new OAuth2Properties(SUCCESS_URI, FAILURE_URI);
+    OAuth2Properties oAuth2Properties = new OAuth2Properties(SUCCESS_URI, FAILURE_URI, LINK_URI);
     successHandler = new OAuth2LoginSuccessHandler(
         oAuth2SignInService, refreshTokenCookieProvider, oAuth2Properties, tokenProvider,
         userSessionRegistry);
@@ -266,6 +268,36 @@ class OAuth2LoginSuccessHandlerTest {
     }
 
     @Test
+    @DisplayName("연동이 성공하면 연동 리다이렉트 URI로 이동한다")
+    void 연동이_성공하면_연동_리다이렉트_URI로_이동한다() throws Exception {
+      // given
+      UUID loggedInUserId = UUID.randomUUID();
+      UUID sessionId = UUID.randomUUID();
+      given(tokenProvider.parseRefreshToken("valid-refresh-token"))
+          .willReturn(new RefreshTokenClaims(loggedInUserId, sessionId, UUID.randomUUID()));
+      given(userSessionRegistry.verifyUserSession(loggedInUserId, sessionId))
+          .willReturn(UserSession.issue(loggedInUserId, Instant.now()));
+
+      OAuth2AuthenticationToken token =
+          googleToken("google-sub-8", "hong@gmail.com", "홍길동", "google-link");
+      SignInDto signInDto = signInDtoOf("hong@gmail.com", "홍길동");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-sub-8", "hong@gmail.com", "홍길동", loggedInUserId))
+          .willReturn(signInDto);
+
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      request.setCookies(
+          new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "valid-refresh-token"));
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      successHandler.onAuthenticationSuccess(request, response, token);
+
+      // then
+      assertThat(response.getRedirectedUrl()).isEqualTo(LINK_URI);
+    }
+
+    @Test
     @DisplayName("REFRESH_TOKEN이 유효해도 세션이 회수됐으면 login_required 에러로 실패 URI로 리다이렉트한다")
     void REFRESH_TOKEN이_유효해도_세션이_회수됐으면_login_required_에러로_실패_URI로_리다이렉트한다() throws Exception {
       // given
@@ -373,6 +405,37 @@ class OAuth2LoginSuccessHandlerTest {
 
       // then
       assertThat(response.getRedirectedUrl()).contains("error_message=oauth_processing_failed");
+    }
+
+    @Test
+    @DisplayName("-link 흐름에서 연동이 실패하면 연동 리다이렉트 URI로 에러와 함께 이동한다")
+    void link_흐름에서_연동이_실패하면_연동_리다이렉트_URI로_에러와_함께_이동한다() throws Exception {
+      // given
+      UUID loggedInUserId = UUID.randomUUID();
+      UUID sessionId = UUID.randomUUID();
+      given(tokenProvider.parseRefreshToken("valid-refresh-token"))
+          .willReturn(new RefreshTokenClaims(loggedInUserId, sessionId, UUID.randomUUID()));
+      given(userSessionRegistry.verifyUserSession(loggedInUserId, sessionId))
+          .willReturn(UserSession.issue(loggedInUserId, Instant.now()));
+
+      OAuth2AuthenticationToken token =
+          googleToken("google-sub-9", "taken@gmail.com", "홍길동", "google-link");
+      given(oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-sub-9", "taken@gmail.com", "홍길동", loggedInUserId))
+          .willThrow(SocialAccountAlreadyLinkedException.withNone());
+
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      request.setCookies(
+          new Cookie(RefreshTokenCookieProvider.REFRESH_TOKEN, "valid-refresh-token"));
+      MockHttpServletResponse response = new MockHttpServletResponse();
+
+      // when
+      successHandler.onAuthenticationSuccess(request, response, token);
+
+      // then
+      assertThat(response.getRedirectedUrl())
+          .startsWith(LINK_URI)
+          .contains("error_message=social_account_already_linked");
     }
   }
 }

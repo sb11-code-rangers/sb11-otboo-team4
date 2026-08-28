@@ -8,7 +8,8 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "otboo.security.oauth2")
 public record OAuth2Properties(
     @NotBlank(message = "successRedirectUri는 필수 값입니다.") String successRedirectUri,
-    @NotBlank(message = "failureRedirectUri는 필수 값입니다.") String failureRedirectUri
+    @NotBlank(message = "failureRedirectUri는 필수 값입니다.") String failureRedirectUri,
+    @NotBlank(message = "linkRedirectUri는 필수 값입니다.") String linkRedirectUri
 ) {
 
 }
