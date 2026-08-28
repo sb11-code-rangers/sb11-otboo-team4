@@ -20,7 +20,9 @@ import com.sprint.mission.otboo.domain.authuser.user.repository.UserRepository;
 import com.sprint.mission.otboo.global.file.storage.FileStorageService;
 import com.sprint.mission.otboo.global.temppassword.registry.TempPasswordRegistry;
 import com.sprint.mission.otboo.security.usersession.registry.UserSessionRegistry;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
@@ -120,7 +122,12 @@ public class UserService {
   }
 
   public List<SocialLinkedStateDto> getSocialLinkedStates(UUID userId) {
-    return List.of();
+    Set<OAuth2Provider> linkedProviders =
+        Set.copyOf(socialAccountRepository.findLinkedProvidersByUserId(userId));
+
+    return Arrays.stream(OAuth2Provider.values())
+        .map(provider -> new SocialLinkedStateDto(provider, linkedProviders.contains(provider)))
+        .toList();
   }
 
   private void checkSelf(UUID userId, UUID requestUserId) {
