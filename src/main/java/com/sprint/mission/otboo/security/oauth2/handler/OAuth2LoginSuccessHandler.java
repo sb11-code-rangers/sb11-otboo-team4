@@ -68,14 +68,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
           explicitLinkUserId);
 
       refreshTokenCookieProvider.attach(response, result.refreshToken());
-      response.sendRedirect(oAuth2Properties.successRedirectUri());
+      String redirectUri =
+          explicitLink ? oAuth2Properties.linkRedirectUri() : oAuth2Properties.successRedirectUri();
+      response.sendRedirect(redirectUri);
     } catch (RuntimeException e) {
       String errorMessage = (e instanceof OAuth2FailureCode failureCode)
           ? failureCode.errorCode()
           : "oauth_processing_failed";
       log.warn("OAuth2 로그인 처리 실패: provider={}, reason={}", registrationId, errorMessage, e);
-      OAuth2RedirectSupport.redirectWithError(response, oAuth2Properties.failureRedirectUri(),
-          errorMessage);
+      boolean redirectToLink = explicitLink && !(e instanceof LoginRequiredException);
+      String failureUri =
+          redirectToLink ? oAuth2Properties.linkRedirectUri() : oAuth2Properties.failureRedirectUri();
+      OAuth2RedirectSupport.redirectWithError(response, failureUri, errorMessage);
     }
   }
 
