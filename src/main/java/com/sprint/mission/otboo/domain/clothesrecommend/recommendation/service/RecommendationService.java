@@ -16,12 +16,12 @@ import com.sprint.mission.otboo.domain.weathernotification.weather.entity.enums.
 import com.sprint.mission.otboo.domain.weathernotification.weather.repository.WeatherRepository;
 import com.sprint.mission.otboo.external.llm.dto.LlmRecommendationCandidate;
 import com.sprint.mission.otboo.external.llm.dto.LlmRecommendationContext;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,6 +46,7 @@ public class RecommendationService {
   private final ClothesRepository clothesRepository;
   private final RecommendationOotdAssembler recommendationOotdAssembler;
   private final LlmRecommendationRefiner llmRecommendationRefiner;
+  private final OutfitComposer outfitComposer;
 
   public RecommendationDto recommend(UUID weatherId, UUID userId) {
     Weather weather = weatherRepository.findById(weatherId)
@@ -70,20 +71,51 @@ public class RecommendationService {
       return new RecommendationDto(weatherId, userId, List.of());
     }
 
-    List<Clothes> ruleBasedSelection = selectClothesByType(userClothes, recommendedTypes);
-
     LlmRecommendationContext llmContext = buildLlmContext(
         weather.getTemperatureCurrent(), adjustedTemp,
         weather.getPrecipitationType(), weather.getWindAsWord(),
         profile.getTemperatureSensitivity(), userClothes);
-    List<Clothes> selectedClothes = llmRecommendationRefiner.refine(
-        llmContext, userClothes, ruleBasedSelection);
+    List<Clothes> pool = coverMissingTypes(
+        llmRecommendationRefiner.selectPool(llmContext, userClothes), userClothes);
+
+    List<Clothes> selectedClothes = outfitComposer.compose(pool, recommendedTypes);
 
     List<OotdDto> ootdList = recommendationOotdAssembler.toOotdDtoList(selectedClothes);
 
     log.info("추천 완료 weatherId={}, 추천 의상 수={}", weatherId, ootdList.size());
 
     return new RecommendationDto(weatherId, userId, ootdList);
+  }
+
+  /**
+   * LLM이 통째로 빠뜨린 종류를 보유 의상으로 메운다.
+   *
+   * <p>LLM은 후보군을 고를 때 신발이나 가방처럼 특정 종류를 아예 언급하지 않을 때가 있다. 그대로 두면 신발 없는 코디가 추천된다. 프롬프트로 부탁하는 것만으로는
+   * 보장되지 않아 코드로 메운다.
+   *
+   * <p>LLM이 한 벌이라도 고른 종류는 건드리지 않는다. 그 종류에 대해서는 LLM의 판단을 존중한다.
+   */
+  List<Clothes> coverMissingTypes(List<Clothes> pool, List<Clothes> userClothes) {
+    Set<ClothesType> coveredTypes = pool.stream()
+        .map(Clothes::getType)
+        .collect(Collectors.toSet());
+
+    List<Clothes> missing = userClothes.stream()
+        .filter(clothes -> !coveredTypes.contains(clothes.getType()))
+        .toList();
+
+    if (missing.isEmpty()) {
+      return pool;
+    }
+
+    // 보정된 종류는 LLM의 날씨 판단을 거치지 않은 채 후보에 들어간다. 안전망이지 정상 경로가 아니므로,
+    // 자주 찍히면 프롬프트를 손봐야 한다는 신호다.
+    Set<ClothesType> missingTypes = missing.stream()
+        .map(Clothes::getType)
+        .collect(Collectors.toSet());
+    log.warn("LLM이 빠뜨린 종류를 보유 의상으로 보정한다 types={}, 보정수={}",
+        missingTypes, missing.size());
+    return Stream.concat(pool.stream(), missing.stream()).toList();
   }
 
   LlmRecommendationContext buildLlmContext(double currentTemp, double adjustedTemp,
@@ -104,6 +136,10 @@ public class RecommendationService {
   Set<ClothesType> getRecommendedTypes(double adjustedTemp) {
     Set<ClothesType> types = EnumSet.noneOf(ClothesType.class);
     types.add(ClothesType.SHOES);
+    // 날씨와 무관하지만 코디를 이루는 품목이라 항상 후보에 넣는다.
+    // UNDERWEAR·ETC는 OOTD에 어울리지 않거나 성격이 섞여 있어 제외한다.
+    types.add(ClothesType.BAG);
+    types.add(ClothesType.ACCESSORY);
 
     if (adjustedTemp <= VERY_COLD_MAX) {
       types.addAll(EnumSet.of(
@@ -152,38 +188,4 @@ public class RecommendationService {
     }
   }
 
-  List<Clothes> selectClothesByType(List<Clothes> userClothes,
-      Set<ClothesType> recommendedTypes) {
-    List<Clothes> selected = new ArrayList<>();
-    boolean dressSelected = false;
-
-    // DRESS가 후보에 있으면 먼저 확인 — DRESS가 있으면 TOP/BOTTOM 대체
-    if (recommendedTypes.contains(ClothesType.DRESS)) {
-      userClothes.stream()
-          .filter(c -> c.getType() == ClothesType.DRESS)
-          .max(Comparator.comparing(Clothes::getCreatedAt)
-              .thenComparing(Clothes::getId))
-          .ifPresent(selected::add);
-      dressSelected = !selected.isEmpty();
-    }
-
-    for (ClothesType type : recommendedTypes) {
-      // DRESS는 이미 처리됨
-      if (type == ClothesType.DRESS) {
-        continue;
-      }
-      // DRESS가 선택됐으면 TOP/BOTTOM은 건너뜀
-      if (dressSelected && (type == ClothesType.TOP || type == ClothesType.BOTTOM)) {
-        continue;
-      }
-
-      userClothes.stream()
-          .filter(c -> c.getType() == type)
-          .max(Comparator.comparing(Clothes::getCreatedAt)
-              .thenComparing(Clothes::getId))
-          .ifPresent(selected::add);
-    }
-
-    return selected;
-  }
 }
