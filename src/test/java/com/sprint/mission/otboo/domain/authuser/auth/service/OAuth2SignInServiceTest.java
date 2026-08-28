@@ -280,6 +280,25 @@ class OAuth2SignInServiceTest {
     }
 
     @Test
+    @DisplayName("이미 다른 사용자에게 연동된 소셜 계정이면 세션을 바꾸지 않고 SocialAccountAlreadyLinkedException을 던진다")
+    void 이미_다른_사용자에게_연동된_소셜_계정이면_세션을_바꾸지_않고_SocialAccountAlreadyLinkedException을_던진다() {
+      // given
+      UUID linkingUserId = UUID.randomUUID();
+      User otherOwner = userWithId(UUID.randomUUID(), "다른사람", "other@test.com");
+      SocialAccount linkedToOther = SocialAccount.link(otherOwner, OAuth2Provider.GOOGLE,
+          "google-taken", "other@gmail.com");
+      given(socialAccountRepository.findByProviderAndProviderId(OAuth2Provider.GOOGLE, "google-taken"))
+          .willReturn(Optional.of(linkedToOther));
+
+      // when & then
+      assertThatThrownBy(() -> oAuth2SignInService.signIn(
+          OAuth2Provider.GOOGLE, "google-taken", "other@gmail.com", "홍길동", linkingUserId))
+          .isInstanceOf(SocialAccountAlreadyLinkedException.class);
+      verify(userSessionRegistry, never()).issue(any(), any());
+      verify(userRepository, never()).findById(any());
+    }
+
+    @Test
     @DisplayName("로그인된 사용자를 찾을 수 없으면 UserNotFoundException을 던진다")
     void 로그인된_사용자를_찾을_수_없으면_UserNotFoundException을_던진다() {
       // given

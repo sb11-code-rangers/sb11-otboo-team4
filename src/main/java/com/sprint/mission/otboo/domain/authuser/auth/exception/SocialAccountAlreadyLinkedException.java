@@ -15,6 +15,10 @@ public class SocialAccountAlreadyLinkedException extends AuthException implement
     return new SocialAccountAlreadyLinkedException(Map.of(), cause);
   }
 
+  public static SocialAccountAlreadyLinkedException withNone() {
+    return new SocialAccountAlreadyLinkedException(Map.of(), null);
+  }
+
   @Override
   public String errorCode() {
     return "social_account_already_linked";
